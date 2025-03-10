@@ -1,8 +1,14 @@
+const slider = document.getElementById('myRange')
+const sliderInfo = document.getElementById('sliderInfo')
+
+const sliderVertices = document.getElementById('myRangeVertices')
+const sliderInfoVertices = document.getElementById('sliderInfoVertices')
+
+const checkbox = document.getElementById('checkbox');
 const canvas = document.getElementById("canvas")
 const cont = canvas.getContext("2d");
-console.log() 
 const canvasLenght = canvas.clientWidth
-const cellSize = 10
+let cellSize = 10
 const points = [
     [10,15],
     [35,210],
@@ -20,7 +26,16 @@ let targetting = undefined
 redArrow.src = './red_arrow.png';
 greenArrow.src = './green_arrow.png';
 cont.fillStyle = "white"
+sliderInfo.innerHTML = slider.value;
+sliderInfoVertices.innerHTML = sliderVertices.value;
 
+// Update the current slider value (each time you drag the slider handle)
+slider.oninput = function() {
+    sliderInfo.innerHTML = divisorMasCercano(this.value);
+} 
+sliderVertices.oninput = function() {
+    sliderInfoVertices.innerHTML = Number(this.value);
+}  
 function lenghtCalculator(array) {
     let line = {start:undefined, end:undefined, err:false}
     for (let i = 0; i < array.length; i++) {
@@ -73,7 +88,7 @@ function drawXYaxis(x,y) {
     fixedX = pointx-w/2
 
     cont.drawImage(greenArrow, fixedX      , y-h   , w,h)
-    cont.drawImage(redArrow  , x+cellSize/2, fixedY, h,w)
+    cont.drawImage(redArrow  , x+cellSize, fixedY, h,w)
 
     XYaxisPosition = {
         ...XYaxisPosition,
@@ -92,6 +107,7 @@ function drawXYaxis(x,y) {
 }
 
 function fill(matrix, transparent) {
+    
     for (let j = 0; j < matrix.length; j++) {
         const {start, end, err} = lenghtCalculator(matrix[j])
         if (err == false) {
@@ -99,12 +115,15 @@ function fill(matrix, transparent) {
             y = j
             w = end-start
             if (transparent == true) {
+                cont.fillStyle = 'rgba(0, 0, 0, 1)';
                 cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+                cont.fillStyle = "white"
                 continue
+            } else {
+                cont.fillStyle = "white"
+                cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+                cont.fillStyle = "white"
             }
-            cont.fillStyle = "white"
-            cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-            cont.fillStyle = "white"
         }
     }
 }
@@ -218,39 +237,31 @@ function hover(x,y) {
         }
     });
 }
-
+function divisorMasCercano(num) {
+    if (num < 0 || num > 100) {
+        throw new Error("El número debe estar entre 0 y 100");
+    }
+    const divisores = [1, 2, 4, 5, 10, 20, 25, 50, 100, 125, 250, 500];
+    // Buscar el divisor más cercano
+    return divisores.reduce((a, b) => 
+        Math.abs(b - num) < Math.abs(a - num) ? b : a
+    );
+}
 setInterval(() => {
+    
+    cellSize = divisorMasCercano(slider.value)
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
-    fill(matriz, false)
     drawEdges()
     drawVertices()
+    if (checkbox.checked) {
+        fill(matriz,transparent=false)
+    } else {
+        fill(matriz,transparent=true)
+    }
     if (greenArrow.complete || redArrow.complete) {
-        targetting = 1
+        targetting = sliderVertices.value
         drawXYaxis(points[targetting][0], points[targetting][1])
     }
 }, 10
 );
-
-/* 
-for (let i = 0; i < canvasLenght/cellSize; i++) {
-    for (let j = 0; j < canvasLenght/cellSize; j++) {
-        cont.strokeRect(i*cellSize,j*cellSize,cellSize,cellSize )
-    }
-}
- */
-/* document.onkeyup = function (e) {
-    if (e.key=="ArrowRight") {
-        points[2][0]+=cellSize
-    }
-    if (e.key=="ArrowLeft") {
-        points[2][0]-=cellSize
-    }
-    if (e.key=="ArrowUp") {
-        points[2][1]-=cellSize
-    }
-    if (e.key=="ArrowDown") {
-        points[2][1]+=cellSize
-    }
-}
- */
