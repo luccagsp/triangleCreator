@@ -8,6 +8,7 @@
 </head>
 
 <body>
+    <h1>Triangle mod</h1>
     <div class="container-custom">
         <div class="slidercontainer">
             <input type="range" min="1" max="100" value="50" class="slider" id="myRange" />
@@ -31,16 +32,22 @@
     * {
         margin: 0;
         padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+
     }
 
     body {
         width: 100vw;
         height: 100dvh;
         display: flex;
-        justify-content: center;
+        justify-content: space-around;
         align-items: center;
+        flex-direction: column;
     }
 
+    h1 {
+        font-size: 50px;
+    }
     .container-custom {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
@@ -51,11 +58,12 @@
         margin-right: 50px;
     }
 
-    #canvas {
+    canvas {
         background-color: transparent;
-        border: 1px solid black;
         outline: none;
     }
+    canvas:focus{outline:none; border: none;}
+
 
     .slider {
         width: 100%;
