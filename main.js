@@ -1,3 +1,38 @@
+//TODO Refactorizar el codigo (de nuevo lpm)
+//TODO Reparar algoritmo de Bresenham (lineas rectas en ciertos ejes ? medio raro)
+//TODO Crear vertices más grandes para rasterizados pequeños
+//TODO Seleccionar vertice en movimiento con click en el canvas
+//lets go
+function lenghtCalculator(array) {
+    let line = {start:undefined, end:undefined, err:false}
+    for (let i = 0; i < array.length; i++) {
+        if (array[i] == false) {continue}
+        if (array[i] == true && array[i+1] == false && line.start ==undefined) {
+            line.start = i+1
+            continue
+        }
+        if (array[i] == true && array[i-1] == false && line.start !=undefined) {
+            line.end = i
+        }
+    }
+    if (line.start == undefined || line.end == undefined){
+        return {start:undefined, end:undefined, err:true}
+    }
+    return line
+}
+function divisorMasCercano(num) {
+    if (num < 0 || num > 100) {
+        throw new Error("El número debe estar entre 0 y 100");
+    }
+    const divisores = [1, 2, 4, 5, 10, 20, 25, 50, 100, 125, 250, 500];
+    // Buscar el divisor más cercano
+    return divisores.reduce((a, b) => 
+        Math.abs(b - num) < Math.abs(a - num) ? b : a
+    );
+}
+function extendVertex(x,y) {
+
+}
 const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
 
@@ -22,37 +57,19 @@ let matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLen
 let transparent = true
 const greenArrow = new Image();
 const redArrow = new Image();
-let targetting = undefined
 redArrow.src = './red_arrow.png';
 greenArrow.src = './green_arrow.png';
 cont.fillStyle = "white"
 sliderInfo.innerHTML = slider.value;
 sliderInfoVertices.innerHTML = sliderVertices.value;
 
-// Update the current slider value (each time you drag the slider handle)
 slider.oninput = function() {
     sliderInfo.innerHTML = divisorMasCercano(this.value);
 } 
 sliderVertices.oninput = function() {
     sliderInfoVertices.innerHTML = Number(this.value);
 }  
-function lenghtCalculator(array) {
-    let line = {start:undefined, end:undefined, err:false}
-    for (let i = 0; i < array.length; i++) {
-        if (array[i] == false) {continue}
-        if (array[i] == true && array[i+1] == false && line.start ==undefined) {
-            line.start = i+1
-            continue
-        }
-        if (array[i] == true && array[i-1] == false && line.start !=undefined) {
-            line.end = i
-        }
-    }
-    if (line.start == undefined || line.end == undefined){
-        return {start:undefined, end:undefined, err:true}
-    }
-    return line
-}
+
 
 function bresenhamAlgorithm(v0,v1) {
     x0 = Math.round(v0[0]/cellSize)
@@ -82,10 +99,8 @@ function drawXYaxis(x,y) {
     y=Math.round(y/cellSize)*cellSize;
     const w=21
     const h=64
-    pointY = y+cellSize/2 //mitad del cuadrado
-    fixedY = pointY-w/2
-    pointx = x+cellSize/2 //mitad del cuadrado
-    fixedX = pointx-w/2
+    fixedX = x+cellSize/2 -w/2 //mitad del cuadrado
+    fixedY = y+cellSize/2 -w/2 //mitad del cuadrado
 
     cont.drawImage(greenArrow, fixedX      , y-h   , w,h)
     cont.drawImage(redArrow  , x+cellSize, fixedY, h,w)
@@ -106,7 +121,7 @@ function drawXYaxis(x,y) {
 
 }
 
-function fill(matrix, transparent) {
+function fill(matrix, fillsTransparent) {
     
     for (let j = 0; j < matrix.length; j++) {
         const {start, end, err} = lenghtCalculator(matrix[j])
@@ -114,7 +129,7 @@ function fill(matrix, transparent) {
             x = start
             y = j
             w = end-start
-            if (transparent == true) {
+            if (fillsTransparent == true) {
                 cont.fillStyle = 'rgba(0, 0, 0, 1)';
                 cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
                 cont.fillStyle = "white"
@@ -127,23 +142,6 @@ function fill(matrix, transparent) {
         }
     }
 }
-
-document.onkeyup = function (e) {
-    e = e || window.Event;
-    if (e.key == "e" || e.key == "E") {
-        if (transparent==true) {
-            fill(matriz, f5alse)
-            transparent=false
-            return true
-        }
-        if (transparent==false) {
-            fill(matriz, true)
-            transparent=true
-            return true
-        }
-    }
-
-};
 
 function drawVertices() {
     points.forEach(point => {
@@ -159,6 +157,7 @@ function drawEdges() {
     bresenhamAlgorithm(points[0],points[1])
     bresenhamAlgorithm(points[1],points[2])
     bresenhamAlgorithm(points[2],points[0])
+    //Dibujar
     for (let j = 0; j < matriz.length; j++) {
         for (let i = 0; i < matriz[j].length; i++) {
             if (matriz[j][i] == true){
@@ -167,47 +166,6 @@ function drawEdges() {
         }
     }
 }
-
-canvas.addEventListener('mousedown', (e) => {
-    const x = e.offsetX
-    const y = e.offsetY
-    console.log(x,y)
-    element = mouse(x,y)
-    targetting = element.id
-});
-
-canvas.addEventListener('mouseup', (e) => {
-    canvas.style.cursor = 'default';
-    Object.values(XYaxisPosition).forEach(element => {
-        element.clicking = false
-    });
-});
-//hover handler
-canvas.addEventListener("mousemove", (e)=> {
-    hover(e.offsetX, e.offsetY)
-
-    if (XYaxisPosition.xAxis.hover ) {
-        canvas.style.cursor = 'pointer';
-        console.log("red")
-    } else if (XYaxisPosition.yAxis.hover) {
-        canvas.style.cursor = 'pointer';
-    } else {canvas.style.cursor = 'default';}
-})
-//movement handler
-canvas.addEventListener("mousemove", (event) => {
-    Object.values(XYaxisPosition).forEach(element => {
-        if (element.name=="xAxis" && element.clicking==true) {
-            const moveTo = event.offsetX
-            if (moveTo > 500 || moveTo < 0) {return}
-            points[targetting][0]=moveTo-element.clickedAt.x
-        }
-        if (element.name=="yAxis" && element.clicking==true) {
-            const moveTo = event.offsetY
-            if (moveTo > 500 || moveTo < 0) {return}
-            points[targetting][1]=moveTo+(64-element.clickedAt.y) //! deuda tecnica a revisar jej
-        }
-    });
-});
 
 function mouse(x,y) {
     Object.values(XYaxisPosition).forEach(element => {
@@ -237,31 +195,92 @@ function hover(x,y) {
         }
     });
 }
-function divisorMasCercano(num) {
-    if (num < 0 || num > 100) {
-        throw new Error("El número debe estar entre 0 y 100");
+
+class CanvasHandler {
+    constructor(canvas, sliderVertices) {
+        this.canvas = canvas;
+        this.context = canvas.getContext("2d");
+        this.sliderVertices = sliderVertices;
+        this.targetting = Number(this.sliderVertices.value);
+
+        // Sincroniza el valor cuando cambia el slider
+        this.sliderVertices.addEventListener('input', this.updateTargetting.bind(this));
     }
-    const divisores = [1, 2, 4, 5, 10, 20, 25, 50, 100, 125, 250, 500];
-    // Buscar el divisor más cercano
-    return divisores.reduce((a, b) => 
-        Math.abs(b - num) < Math.abs(a - num) ? b : a
-    );
+
+    updateTargetting() {
+        this.targetting = Number(this.sliderVertices.value);
+    }
+
+
+    initEvents() {
+        this.canvas.addEventListener("mousedown", this.onMouseDown.bind(this));
+        this.canvas.addEventListener("mouseup", this.onMouseUp.bind(this));
+        this.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
+    }
+
+    onMouseDown(e) {
+        const x = e.offsetX
+        const y = e.offsetY
+        const element = mouse(x,y)
+        cont.fillStyle = "red";
+        cont.arc(x, y, 40, 0, 2 * Math.PI);
+        cont.fill();
+        cont.fillStyle = "white"
+    }
+
+    onMouseUp(e) {
+        canvas.style.cursor = 'default';
+        Object.values(XYaxisPosition).forEach(element => {
+            element.clicking = false
+        });
+    }
+
+    onMouseMove(e) {
+        //hover
+        hover(e.offsetX, e.offsetY)
+
+        if (XYaxisPosition.xAxis.hover ) {canvas.style.cursor = 'pointer';} 
+        else if (XYaxisPosition.yAxis.hover) {canvas.style.cursor = 'pointer';} 
+        else {canvas.style.cursor = 'default';}
+        //movement
+        Object.values(XYaxisPosition).forEach(element => {
+            if (element.name=="xAxis" && element.clicking==true) {
+                const finalVertexX = e.offsetX-element.clickedAt.x
+                if (finalVertexX > 500 || finalVertexX < 0) {
+                    points[this.targetting][0]=1
+                    return
+                }
+                points[this.targetting][0]=finalVertexX
+            }
+            if (element.name=="yAxis" && element.clicking==true) {
+                const finalVertexY = e.offsetY+(64-element.clickedAt.y)
+                if (finalVertexY > 500 || finalVertexY < 0) {
+                    points[this.targetting][1] = 499
+                    return
+                } 
+                points[this.targetting][1]=finalVertexY //! deuda tecnica a revisar jej
+                
+            }
+        });
+    }
 }
-setInterval(() => {
-    
+let canvasHandler = new CanvasHandler(canvas, sliderVertices)
+canvasHandler.initEvents()
+
+function gameLoop(){
     cellSize = divisorMasCercano(slider.value)
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
     drawEdges()
     drawVertices()
     if (checkbox.checked) {
-        fill(matriz,transparent=false)
+        fill(matriz,fillsTransparent=false)
     } else {
-        fill(matriz,transparent=true)
+        fill(matriz,fillsTransparent=true)
     }
     if (greenArrow.complete || redArrow.complete) {
-        targetting = sliderVertices.value
-        drawXYaxis(points[targetting][0], points[targetting][1])
+        drawXYaxis(points[canvasHandler.targetting][0], points[canvasHandler.targetting][1])
     }
-}, 10
-);
+}
+
+setInterval(gameLoop, 10);
