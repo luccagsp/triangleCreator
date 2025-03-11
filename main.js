@@ -19,9 +19,12 @@ const points = [
     [35,210],
     [300,200]
 ] 
-let XYaxisPosition = {
-    xAxis: {id:0, name:"xAxis", width:64, height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    yAxis: {id:1, name:"yAxis", width:21, height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}}
+let assets = {
+    xAxis: {id:0,type:"axisArrow", name:"xAxis", width:64, height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    yAxis: {id:1,type:"axisArrow", name:"yAxis", width:21, height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    vertex01: {id:2,type:"vertex", name:"vertex0", width:null, height:null,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    vertex02: {id:3,type:"vertex", name:"vertex1", width:null, height:null,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    vertex03: {id:4,type:"vertex", name:"vertex2", width:null, height:null,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
 }
 let matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
 let transparent = true
@@ -118,15 +121,15 @@ function drawXYaxis(x,y) {
     cont.drawImage(greenArrow, fixedX      , y-h   , w,h)
     cont.drawImage(redArrow  , x+cellSize, fixedY, h,w)
 
-    XYaxisPosition = {
-        ...XYaxisPosition,
+    assets = {
+        ...assets,
         xAxis: {
-            ...XYaxisPosition.xAxis,
+            ...assets.xAxis,
             x: x + cellSize / 2,
             y: fixedY
         },
         yAxis: {
-            ...XYaxisPosition.yAxis,
+            ...assets.yAxis,
             x: fixedX,
             y: y - h
         }
@@ -176,7 +179,7 @@ function drawEdges() {
     }
 }
 function mouse(x,y) {
-    Object.values(XYaxisPosition).forEach(element => {
+    Object.values(assets).forEach(element => {
         if (
             x >= element.x &&
             x <= element.x + element.width &&
@@ -190,7 +193,7 @@ function mouse(x,y) {
     });
 }
 function hover(x,y) {
-    Object.values(XYaxisPosition).forEach(element => {
+    Object.values(assets).forEach(element => {
         if (
             x >= element.x &&
             x <= element.x + element.width &&
@@ -233,7 +236,7 @@ class CanvasHandler {
 
     onMouseUp(e) {
         canvas.style.cursor = 'default';
-        Object.values(XYaxisPosition).forEach(element => {
+        Object.values(assets).forEach(element => {
             element.clicking = false
         });
     }
@@ -242,11 +245,11 @@ class CanvasHandler {
         //hover
         hover(e.offsetX, e.offsetY)
 
-        if (XYaxisPosition.xAxis.hover ) {canvas.style.cursor = 'pointer';} 
-        else if (XYaxisPosition.yAxis.hover) {canvas.style.cursor = 'pointer';} 
+        if (assets.xAxis.hover ) {canvas.style.cursor = 'pointer';} 
+        else if (assets.yAxis.hover) {canvas.style.cursor = 'pointer';} 
         else {canvas.style.cursor = 'default';}
         //movement
-        Object.values(XYaxisPosition).forEach(element => {
+        Object.values(assets).forEach(element => {
             if (element.name=="xAxis" && element.clicking==true) {
                 const finalVertexX = e.offsetX-element.clickedAt.x
                 if (finalVertexX > 500 || finalVertexX < 0) {
