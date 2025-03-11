@@ -3,36 +3,6 @@
 //TODO Crear vertices más grandes para rasterizados pequeños
 //TODO Seleccionar vertice en movimiento con click en el canvas
 //lets go
-function lenghtCalculator(array) {
-    let line = {start:undefined, end:undefined, err:false}
-    for (let i = 0; i < array.length; i++) {
-        if (array[i] == false) {continue}
-        if (array[i] == true && array[i+1] == false && line.start ==undefined) {
-            line.start = i+1
-            continue
-        }
-        if (array[i] == true && array[i-1] == false && line.start !=undefined) {
-            line.end = i
-        }
-    }
-    if (line.start == undefined || line.end == undefined){
-        return {start:undefined, end:undefined, err:true}
-    }
-    return line
-}
-function divisorMasCercano(num) {
-    if (num < 0 || num > 100) {
-        throw new Error("El número debe estar entre 0 y 100");
-    }
-    const divisores = [1, 2, 4, 5, 10, 20, 25, 50, 100, 125, 250, 500];
-    // Buscar el divisor más cercano
-    return divisores.reduce((a, b) => 
-        Math.abs(b - num) < Math.abs(a - num) ? b : a
-    );
-}
-function extendVertex(x,y) {
-
-}
 const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
 
@@ -71,6 +41,48 @@ sliderVertices.oninput = function() {
 }  
 
 
+function extendVertex(x,y) {
+    x=Math.round(x/cellSize)*cellSize;
+    y=Math.round(y/cellSize)*cellSize;
+    let cellsExpand = canvas.clientWidth/cellSize*2
+    cellsExpand = cellsExpand
+    newX = x-cellsExpand
+    newY = y-cellsExpand
+    width = x+cellsExpand
+    height = y+cellsExpand
+    cont.fillStyle = "blue"
+    cont.fillRect(newX, newY, width, height)
+    cont.fillStyle = "white"
+    console.log(newX, newY, width, height)
+}
+
+function lenghtCalculator(array) {
+    let line = {start:undefined, end:undefined, err:false}
+    for (let i = 0; i < array.length; i++) {
+        if (array[i] == false) {continue}
+        if (array[i] == true && array[i+1] == false && line.start ==undefined) {
+            line.start = i+1
+            continue
+        }
+        if (array[i] == true && array[i-1] == false && line.start !=undefined) {
+            line.end = i
+        }
+    }
+    if (line.start == undefined || line.end == undefined){
+        return {start:undefined, end:undefined, err:true}
+    }
+    return line
+}
+function divisorMasCercano(num) {
+    if (num < 0 || num > 100) {
+        throw new Error("El número debe estar entre 0 y 100");
+    }
+    const divisores = [1, 2, 4, 5, 10, 20, 25, 50, 100, 125, 250, 500];
+    // Buscar el divisor más cercano
+    return divisores.reduce((a, b) => 
+        Math.abs(b - num) < Math.abs(a - num) ? b : a
+    );
+}
 function bresenhamAlgorithm(v0,v1) {
     x0 = Math.round(v0[0]/cellSize)
     y0 = Math.round(v0[1]/cellSize)
@@ -93,7 +105,6 @@ function bresenhamAlgorithm(v0,v1) {
         matriz[y][x] = true
     }
 }
-
 function drawXYaxis(x,y) {
     x=Math.round(x/cellSize)*cellSize;
     y=Math.round(y/cellSize)*cellSize;
@@ -120,7 +131,6 @@ function drawXYaxis(x,y) {
     };
 
 }
-
 function fill(matrix, fillsTransparent) {
     
     for (let j = 0; j < matrix.length; j++) {
@@ -142,7 +152,6 @@ function fill(matrix, fillsTransparent) {
         }
     }
 }
-
 function drawVertices() {
     points.forEach(point => {
         x=Math.round(point[0]/cellSize)
@@ -152,7 +161,6 @@ function drawVertices() {
         cont.fillStyle = "white"
     });
 }
-
 function drawEdges() {
     bresenhamAlgorithm(points[0],points[1])
     bresenhamAlgorithm(points[1],points[2])
@@ -166,7 +174,6 @@ function drawEdges() {
         }
     }
 }
-
 function mouse(x,y) {
     Object.values(XYaxisPosition).forEach(element => {
         if (
@@ -195,7 +202,6 @@ function hover(x,y) {
         }
     });
 }
-
 class CanvasHandler {
     constructor(canvas, sliderVertices) {
         this.canvas = canvas;
@@ -222,10 +228,10 @@ class CanvasHandler {
         const x = e.offsetX
         const y = e.offsetY
         const element = mouse(x,y)
-        cont.fillStyle = "red";
-        cont.arc(x, y, 40, 0, 2 * Math.PI);
-        cont.fill();
-        cont.fillStyle = "white"
+        // cont.fillStyle = "red";
+        // cont.arc(x, y, 40, 0, 2 * Math.PI);
+        // cont.fill();
+        // cont.fillStyle = "white"
     }
 
     onMouseUp(e) {
@@ -281,6 +287,7 @@ function gameLoop(){
     if (greenArrow.complete || redArrow.complete) {
         drawXYaxis(points[canvasHandler.targetting][0], points[canvasHandler.targetting][1])
     }
+    extendVertex(300,200)
 }
 
 setInterval(gameLoop, 10);
