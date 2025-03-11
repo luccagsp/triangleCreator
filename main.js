@@ -35,25 +35,27 @@ sliderInfoVertices.innerHTML = sliderVertices.value;
 
 slider.oninput = function() {
     sliderInfo.innerHTML = divisorMasCercano(this.value);
-} 
-sliderVertices.oninput = function() {
-    sliderInfoVertices.innerHTML = Number(this.value);
-}  
+}
 
 
 function extendVertex(x,y) {
-    x=Math.round(x/cellSize)*cellSize;
-    y=Math.round(y/cellSize)*cellSize;
-    let cellsExpand = canvas.clientWidth/cellSize*2
-    cellsExpand = cellsExpand
-    newX = x-cellsExpand
-    newY = y-cellsExpand
-    width = x+cellsExpand
-    height = y+cellsExpand
-    cont.fillStyle = "blue"
-    cont.fillRect(newX, newY, width, height)
-    cont.fillStyle = "white"
-    console.log(newX, newY, width, height)
+    const cellSize = divisorMasCercano(Number(slider.value))
+    x=Math.round(x/cellSize);
+    y=Math.round(y/cellSize);
+    if (cellSize > 10) {
+        x=x*cellSize
+        y=y*cellSize
+        console.log(x,y)
+        return {x,y,w:cellSize,h:cellSize}
+    }
+    const minimumCellSize = 10
+    
+    console.log(minimumCellSize/cellSize)
+    w = minimumCellSize*2
+    h = minimumCellSize*2
+    x = (x-(minimumCellSize/cellSize))*cellSize
+    y = (y-(minimumCellSize/cellSize))*cellSize
+    return {x,y,w,h}
 }
 
 function lenghtCalculator(array) {
@@ -154,10 +156,9 @@ function fill(matrix, fillsTransparent) {
 }
 function drawVertices() {
     points.forEach(point => {
-        x=Math.round(point[0]/cellSize)
-        y=Math.round(point[1]/cellSize)
+        const {x,y,w,h} = extendVertex(point[0], point[1])
         cont.fillStyle = "blue"
-        cont.fillRect(x*cellSize,y*cellSize, cellSize, cellSize)
+        cont.fillRect(x, y, w, h)
         cont.fillStyle = "white"
     });
 }
@@ -227,11 +228,7 @@ class CanvasHandler {
     onMouseDown(e) {
         const x = e.offsetX
         const y = e.offsetY
-        const element = mouse(x,y)
-        // cont.fillStyle = "red";
-        // cont.arc(x, y, 40, 0, 2 * Math.PI);
-        // cont.fill();
-        // cont.fillStyle = "white"
+        mouse(x,y)
     }
 
     onMouseUp(e) {
@@ -278,16 +275,15 @@ function gameLoop(){
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
     drawEdges()
-    drawVertices()
     if (checkbox.checked) {
         fill(matriz,fillsTransparent=false)
     } else {
         fill(matriz,fillsTransparent=true)
     }
+    drawVertices()
     if (greenArrow.complete || redArrow.complete) {
         drawXYaxis(points[canvasHandler.targetting][0], points[canvasHandler.targetting][1])
     }
-    extendVertex(300,200)
 }
 
 setInterval(gameLoop, 10);
