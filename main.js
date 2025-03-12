@@ -257,21 +257,21 @@ class CanvasHandler {
             if (element.name=="xAxis" && element.clicking==true) {
                 const finalVertexX = e.offsetX-element.clickedAt.x
                 if (finalVertexX > 500 || finalVertexX < 0) {
-                    let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                    let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
                     vertex.x = 1
                     return
                 }
-                let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
-                this.vertex.x = finalVertexX
+                let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
+                vertex.x = finalVertexX
             }
             if (element.name=="yAxis" && element.clicking==true) {
                 const finalVertexY = e.offsetY+(64-element.clickedAt.y)
                 if (finalVertexY > 500 || finalVertexY < 0) {
-                    let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                    let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
                     vertex.y = 499
                     return
                 } 
-                let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
                 vertex.y = finalVertexY //! deuda tecnica a revisar jej                
             }
         });
