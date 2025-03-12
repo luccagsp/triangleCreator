@@ -14,17 +14,12 @@ const canvas = document.getElementById("canvas")
 const cont = canvas.getContext("2d");
 const canvasLenght = canvas.clientWidth
 let cellSize = 10
-const points = [
-    [10,15],
-    [35,210],
-    [300,200]
-] 
 let assets = {
-    xAxis: {id:0,type:"axisArrow", name:"xAxis", width:64, height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    yAxis: {id:1,type:"axisArrow", name:"yAxis", width:21, height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    vertex01: {id:2,type:"vertex", name:"vertex0", width:null, height:null,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    vertex02: {id:3,type:"vertex", name:"vertex1", width:null, height:null,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    vertex03: {id:4,type:"vertex", name:"vertex2", width:null, height:null,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    vertex0: {id:2,type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:15, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    vertex1: {id:3,type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    vertex2: {id:4,type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}},
 }
 let matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
 let transparent = true
@@ -48,7 +43,6 @@ function extendVertex(x,y) {
     if (cellSize > 10) {
         x=x*cellSize
         y=y*cellSize
-        console.log(x,y)
         return {x,y,w:cellSize,h:cellSize}
     }
     const minimumCellSize = 10
@@ -158,22 +152,32 @@ function fill(matrix, fillsTransparent) {
     }
 }
 function drawVertices() {
-    points.forEach(point => {
-        const {x,y,w,h} = extendVertex(point[0], point[1])
+    // Filtrar solo los elementos con type: "vertex"
+    const vertices = Object.values(assets).filter(asset => asset.type === 'vertex');
+
+    // Recorrer los elementos filtrados
+    vertices.forEach(vertex => {
+        const {x,y,w,h} = extendVertex(vertex.x, vertex.y)
         cont.fillStyle = "blue"
         cont.fillRect(x, y, w, h)
         cont.fillStyle = "white"
     });
 }
 function drawEdges() {
-    bresenhamAlgorithm(points[0],points[1])
-    bresenhamAlgorithm(points[1],points[2])
-    bresenhamAlgorithm(points[2],points[0])
+    const vertex0 = Object.values(assets).filter(asset => asset.name === "vertex0")[0];
+    const vertex1 = Object.values(assets).filter(asset => asset.name === "vertex1")[0];
+    const vertex2 = Object.values(assets).filter(asset => asset.name === "vertex2")[0];
+    bresenhamAlgorithm([vertex0.x, vertex0.y],[vertex1.x, vertex1.y])
+    bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y])
+    bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y])
     //Dibujar
     for (let j = 0; j < matriz.length; j++) {
         for (let i = 0; i < matriz[j].length; i++) {
             if (matriz[j][i] == true){
+                cont.fillStyle = "white"
                 cont.fillRect(i*cellSize,j*cellSize,cellSize,cellSize )
+                console.log(i,j)
+                cont.fillStyle = "white"
             }
         }
     }
@@ -253,19 +257,22 @@ class CanvasHandler {
             if (element.name=="xAxis" && element.clicking==true) {
                 const finalVertexX = e.offsetX-element.clickedAt.x
                 if (finalVertexX > 500 || finalVertexX < 0) {
-                    points[this.targetting][0]=1
+                    let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                    vertex.x = 1
                     return
                 }
-                points[this.targetting][0]=finalVertexX
+                let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                this.vertex.x = finalVertexX
             }
             if (element.name=="yAxis" && element.clicking==true) {
                 const finalVertexY = e.offsetY+(64-element.clickedAt.y)
                 if (finalVertexY > 500 || finalVertexY < 0) {
-                    points[this.targetting][1] = 499
+                    let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                    vertex.y = 499
                     return
                 } 
-                points[this.targetting][1]=finalVertexY //! deuda tecnica a revisar jej
-                
+                let vertex = assets.find(asset => asset.name === `vertex${this.targetting}`)
+                vertex.y = finalVertexY //! deuda tecnica a revisar jej                
             }
         });
     }
@@ -278,6 +285,12 @@ function gameLoop(){
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
     drawEdges()
+    assets.vertex0.width = cellSize
+    assets.vertex0.height = cellSize
+    assets.vertex1.width = cellSize
+    assets.vertex1.height = cellSize
+    assets.vertex2.width = cellSize
+    assets.vertex2.height = cellSize
     if (checkbox.checked) {
         fill(matriz,fillsTransparent=false)
     } else {
@@ -285,7 +298,8 @@ function gameLoop(){
     }
     drawVertices()
     if (greenArrow.complete || redArrow.complete) {
-        drawXYaxis(points[canvasHandler.targetting][0], points[canvasHandler.targetting][1])
+        const vertex = Object.values(assets).filter(asset => asset.name === `vertex${canvasHandler.targetting}`)[0];
+        drawXYaxis(vertex.x, vertex.y)
     }
 }
 
