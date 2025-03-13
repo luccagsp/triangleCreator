@@ -1,5 +1,4 @@
-//TODO Reparar algoritmo de Bresenham (lineas rectas en ciertos ejes ? medio raro)
-//lets go
+//todo: Reparar hitbox de vertices
 const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
 
@@ -87,15 +86,14 @@ function bresenhamAlgorithm(v0,v1) {
     let dx = x1 - x0
     let dy = y1 - y0
 
-    const step = Math.max(Math.abs(dx), Math.abs(dy)) //! Linea para soportar valores negativos
-
-    if (dx == 0) return undefined
-    let stepX = dx / step //!
-    let stepY = dy / step //!
+    const step = Math.max(Math.abs(dx), Math.abs(dy)) 
+    if (step == 0) return undefined
+    let stepX = dx / step
+    let stepY = dy / step
 
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
-        let x = Math.round(x0 + i * stepX)  //!vals negativos soporte
-        let y = Math.round(y0 + i * stepY) //!vals negativos soporte
+        let x = Math.round(x0 + i * stepX) 
+        let y = Math.round(y0 + i * stepY)
         matriz[y][x] = true
     }
 }
@@ -306,4 +304,4 @@ function gameLoop(){
     }
 }
 
-setInterval(gameLoop, 10);
+setInterval(gameLoop, 5);
