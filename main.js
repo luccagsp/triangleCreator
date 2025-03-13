@@ -1,7 +1,4 @@
-//TODO Refactorizar el codigo (de nuevo lpm)
 //TODO Reparar algoritmo de Bresenham (lineas rectas en ciertos ejes ? medio raro)
-//TODO Crear vertices más grandes para rasterizados pequeños
-//TODO Seleccionar vertice en movimiento con click en el canvas
 //lets go
 const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
@@ -17,9 +14,9 @@ let cellSize = 10
 let assets = {
     xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
     yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
-    vertex0: {id:2,type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:15, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
-    vertex1: {id:3,type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
-    vertex2: {id:4,type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    vertex0: {id:2, vertexId: 0, type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:15, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    vertex1: {id:3, vertexId: 1, type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    vertex2: {id:4, vertexId: 2, type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
 }
 let matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
 let transparent = true
@@ -181,7 +178,7 @@ function drawEdges() {
     }
 }
 function mouse(x,y) {
-    Object.values(assets).forEach(element => {
+    return Object.values(assets).find(element => {
         if (
             x >= element.x &&
             x <= element.x + element.width &&
@@ -195,7 +192,7 @@ function mouse(x,y) {
     });
 }
 function hover(x,y) {
-    Object.values(assets).forEach(element => {
+    return Object.values(assets).find(element => {
         if (
             element.hoverable===true &&
             x >= element.x &&
@@ -235,7 +232,13 @@ class CanvasHandler {
     onMouseDown(e) {
         const x = e.offsetX
         const y = e.offsetY
-        mouse(x,y)
+        const elementTouched = mouse(x,y)
+        
+        if (!elementTouched) return
+        const vertexId = elementTouched.vertexId
+        if (elementTouched.type === "vertex" && vertexId != this.targetting) {
+            this.targetting = vertexId
+        }
     }
 
     onMouseUp(e) {
@@ -251,11 +254,7 @@ class CanvasHandler {
         const isHovering = Object.values(assets).some(
             (asset) => asset.hoverable && asset.hover
         );
-        console.log(isHovering)
         canvas.style.cursor = isHovering ? 'pointer' : 'default';
-        //if (assets.xAxis.hover ) {canvas.style.cursor = 'pointer';} 
-        //else if (assets.yAxis.hover) {canvas.style.cursor = 'pointer';} 
-        //else {canvas.style.cursor = 'default';}
         //movement
         Object.values(assets).forEach(element => {
             if (element.name=="xAxis" && element.clicking==true) {
