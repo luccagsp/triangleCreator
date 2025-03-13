@@ -15,11 +15,11 @@ const cont = canvas.getContext("2d");
 const canvasLenght = canvas.clientWidth
 let cellSize = 10
 let assets = {
-    xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    vertex0: {id:2,type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:15, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    vertex1: {id:3,type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}},
-    vertex2: {id:4,type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}},
+    xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    vertex0: {id:2,type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:15, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    vertex1: {id:3,type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
+    vertex2: {id:4,type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
 }
 let matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
 let transparent = true
@@ -47,7 +47,6 @@ function extendVertex(x,y) {
     }
     const minimumCellSize = 10
     
-    console.log(minimumCellSize/cellSize)
     w = minimumCellSize*2
     h = minimumCellSize*2
     x = (x-(minimumCellSize/cellSize))*cellSize
@@ -83,24 +82,23 @@ function divisorMasCercano(num) {
     );
 }
 function bresenhamAlgorithm(v0,v1) {
-    x0 = Math.round(v0[0]/cellSize)
-    y0 = Math.round(v0[1]/cellSize)
-    x1 = Math.round(v1[0]/cellSize)
-    y1 = Math.round(v1[1]/cellSize)
+    let x0 = Math.round(v0[0]/cellSize)
+    let y0 = Math.round(v0[1]/cellSize)
+    let x1 = Math.round(v1[0]/cellSize)
+    let y1 = Math.round(v1[1]/cellSize)
 
-    dx = x1-x0
-    dy = y1-y0
+    let dx = x1 - x0
+    let dy = y1 - y0
 
     const step = Math.max(Math.abs(dx), Math.abs(dy)) //! Linea para soportar valores negativos
 
     if (dx == 0) return undefined
-    m = dy/dx //Es la pendiente! (y=mx+b) 
-    stepX = dx/step //!
-    stepY = dy/step //!
+    let stepX = dx / step //!
+    let stepY = dy / step //!
 
-    for (let i = 0; i < step+1; i++) { //Por cada casilla horizontal de distancia...
-        x = Math.round(x0+i*stepX)  //!vals negativos soporte
-        y = Math.round(y0+i*stepY) //!vals negativos soporte
+    for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
+        let x = Math.round(x0 + i * stepX)  //!vals negativos soporte
+        let y = Math.round(y0 + i * stepY) //!vals negativos soporte
         matriz[y][x] = true
     }
 }
@@ -159,6 +157,7 @@ function drawVertices() {
     vertices.forEach(vertex => {
         const {x,y,w,h} = extendVertex(vertex.x, vertex.y)
         cont.fillStyle = "blue"
+
         cont.fillRect(x, y, w, h)
         cont.fillStyle = "white"
     });
@@ -176,7 +175,6 @@ function drawEdges() {
             if (matriz[j][i] == true){
                 cont.fillStyle = "white"
                 cont.fillRect(i*cellSize,j*cellSize,cellSize,cellSize )
-                console.log(i,j)
                 cont.fillStyle = "white"
             }
         }
@@ -199,11 +197,13 @@ function mouse(x,y) {
 function hover(x,y) {
     Object.values(assets).forEach(element => {
         if (
+            element.hoverable===true &&
             x >= element.x &&
             x <= element.x + element.width &&
             y >= element.y &&
             y <= element.y + element.height
         ) {
+            console.log(`${element.name} tiene hover true`)
             element.hover = true
         } else {
             element.hover = false
@@ -248,10 +248,14 @@ class CanvasHandler {
     onMouseMove(e) {
         //hover
         hover(e.offsetX, e.offsetY)
-
-        if (assets.xAxis.hover ) {canvas.style.cursor = 'pointer';} 
-        else if (assets.yAxis.hover) {canvas.style.cursor = 'pointer';} 
-        else {canvas.style.cursor = 'default';}
+        const isHovering = Object.values(assets).some(
+            (asset) => asset.hoverable && asset.hover
+        );
+        console.log(isHovering)
+        canvas.style.cursor = isHovering ? 'pointer' : 'default';
+        //if (assets.xAxis.hover ) {canvas.style.cursor = 'pointer';} 
+        //else if (assets.yAxis.hover) {canvas.style.cursor = 'pointer';} 
+        //else {canvas.style.cursor = 'default';}
         //movement
         Object.values(assets).forEach(element => {
             if (element.name=="xAxis" && element.clicking==true) {
