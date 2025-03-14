@@ -11,11 +11,13 @@
     <h1>Triangle mod</h1>
     <div class="container-custom">
         <div class="slidercontainer">
+            <p id="description">Rasterizado:</p>
             <input type="range" min="1" max="100" value="50" class="slider" id="myRange" />
             <p id="sliderInfo"></p>
+            <p id="description">Vértice:</p>
             <input type="range" min="0" max="2" value="0" class="slider" id="myRangeVertices" />
-            <p id="sliderInfoVertices"></p>
-            <label class="container">Fill
+            <!-- <p id="sliderInfoVertices"></p> -->
+            <label class="container">Rellenar
                 <input id="checkbox" type="checkbox" checked="checked">
                 <span class="checkmark"></span>
             </label>
@@ -46,6 +48,15 @@
         flex-direction: column;
         background-color: #1E1E1E;
         color: #fff;
+    }
+    #description {
+        font-size: 20px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .container {
+        margin-top: 15px;
+        
     }
 
     h1 {

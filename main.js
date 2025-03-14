@@ -3,7 +3,6 @@ const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
 
 const sliderVertices = document.getElementById('myRangeVertices')
-const sliderInfoVertices = document.getElementById('sliderInfoVertices')
 
 const checkbox = document.getElementById('checkbox');
 const canvas = document.getElementById("canvas")
@@ -17,15 +16,18 @@ let assets = {
     vertex1: {id:3, vertexId: 1, type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
     vertex2: {id:4, vertexId: 2, type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
 }
-let matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+
+//mapa binario de celdas a dibujar
+let matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
 let transparent = true
+
 const greenArrow = new Image();
+greenArrow.src = './green_arrow.png';
 const redArrow = new Image();
 redArrow.src = './red_arrow.png';
-greenArrow.src = './green_arrow.png';
 cont.fillStyle = "white"
+
 sliderInfo.innerHTML = slider.value;
-sliderInfoVertices.innerHTML = sliderVertices.value;
 
 slider.oninput = function() {
     sliderInfo.innerHTML = divisorMasCercano(this.value);
@@ -94,7 +96,7 @@ function bresenhamAlgorithm(v0,v1) {
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
         let x = Math.round(x0 + i * stepX) 
         let y = Math.round(y0 + i * stepY)
-        matriz[y][x] = true
+        matrixMap[y][x] = true
     }
 }
 function drawXYaxis(x,y) {
@@ -165,9 +167,9 @@ function drawEdges() {
     bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y])
     bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y])
     //Dibujar
-    for (let j = 0; j < matriz.length; j++) {
-        for (let i = 0; i < matriz[j].length; i++) {
-            if (matriz[j][i] == true){
+    for (let j = 0; j < matrixMap.length; j++) {
+        for (let i = 0; i < matrixMap[j].length; i++) {
+            if (matrixMap[j][i] == true){
                 cont.fillStyle = "white"
                 cont.fillRect(i*cellSize,j*cellSize,cellSize,cellSize )
                 cont.fillStyle = "white"
@@ -284,7 +286,7 @@ canvasHandler.initEvents()
 function gameLoop(){
     cellSize = divisorMasCercano(slider.value)
     cont.clearRect(0,0,canvasLenght, canvasLenght)
-    matriz = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+    matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
     drawEdges()
     assets.vertex0.width = cellSize
     assets.vertex0.height = cellSize
@@ -293,9 +295,9 @@ function gameLoop(){
     assets.vertex2.width = cellSize
     assets.vertex2.height = cellSize
     if (checkbox.checked) {
-        fill(matriz,fillsTransparent=false)
+        fill(matrixMap,fillsTransparent=false)
     } else {
-        fill(matriz,fillsTransparent=true)
+        fill(matrixMap,fillsTransparent=true)
     }
     drawVertices()
     if (greenArrow.complete || redArrow.complete) {
