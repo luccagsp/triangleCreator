@@ -22,9 +22,9 @@ let matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvas
 let transparent = true
 
 const greenArrow = new Image();
-greenArrow.src = './green_arrow.png';
+greenArrow.src = './img/green_arrow.png';
 const redArrow = new Image();
-redArrow.src = './red_arrow.png';
+redArrow.src = './img/red_arrow.png';
 cont.fillStyle = "white"
 
 sliderInfo.innerHTML = slider.value;
