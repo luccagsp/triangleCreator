@@ -329,12 +329,13 @@ class CanvasHandler {
 let canvasHandler = new CanvasHandler(canvas, sliderVertices)
 
 canvasHandler.initEvents()
-
+cellSize = divisorMasCercano(slider.value);
 slider.oninput = function() {
     sliderInfo.innerHTML = divisorMasCercano(this.value);
-    cellSize = divisorMasCercano(this.value);
+    cellSize = divisorMasCercano(slider.value);
 }
 function gameLoop(){
+    
     updateVertexCache()
     colorMap =  new Map()
     cont.clearRect(0,0,canvasLenght, canvasLenght)
