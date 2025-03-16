@@ -19,6 +19,16 @@ let assets = {
     vertex1: {id:3, vertexId: 1, type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:255,b:0}},
     vertex2: {id:4, vertexId: 2, type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:0,b:255}},
 }
+let cachedVertices = {
+    vertex0: null,
+    vertex1: null,
+    vertex2: null
+};
+function updateVertexCache() {
+    cachedVertices.vertex0 = assets.vertex0;
+    cachedVertices.vertex1 = assets.vertex1;
+    cachedVertices.vertex2 = assets.vertex2;
+}
 
 //mapa binario de celdas a dibujar
 let matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
@@ -109,8 +119,6 @@ function bresenhamAlgorithm(v0,v1, v0color, v1color) {
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
         let x = Math.round(x0 + i * stepX) 
         let y = Math.round(y0 + i * stepY)
-        console.log(matrixMap)
-        console.log(y,x)
         matrixMap[y][x] = true
         //color handler
         const {r,g,b} = createGradientByPoint(v0color, v1color, stepColor*i)
@@ -182,23 +190,23 @@ function fill(matrix, fillsTransparent) {
     }
 }
 function drawVertices() {
-    // Filtrar solo los elementos con type: "vertex"
-    const vertices = Object.values(assets).filter(asset => asset.type === 'vertex');
-
-    // Recorrer los elementos filtrados
-    vertices.forEach(vertex => {
+    const vertices = [cachedVertices.vertex0, cachedVertices.vertex1, cachedVertices.vertex2];
+    for (let i = 0; i < vertices.length; i++) {
+        const vertex = vertices[i]
         const {x,y,w,h} = extendVertex(vertex.x, vertex.y)
         const {r,g,b} = vertex.color
         cont.fillStyle = `rgb(${r},${g},${b})`
 
         cont.fillRect(x, y, w, h)
         cont.fillStyle = "white"
-    });
+    }
+    
 }
 function drawEdges() {
-    const vertex0 = Object.values(assets).filter(asset => asset.name === "vertex0")[0];
-    const vertex1 = Object.values(assets).filter(asset => asset.name === "vertex1")[0];
-    const vertex2 = Object.values(assets).filter(asset => asset.name === "vertex2")[0];
+    
+    const vertex0 = cachedVertices.vertex0;
+    const vertex1 = cachedVertices.vertex1;
+    const vertex2 = cachedVertices.vertex2;
     bresenhamAlgorithm([vertex0.x, vertex0.y],[vertex1.x, vertex1.y],vertex0.color,vertex1.color)
     bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y],vertex1.color,vertex2.color)
     bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y],vertex2.color,vertex0.color)
@@ -241,7 +249,6 @@ function hover(x,y) {
             y >= element.y &&
             y <= element.y + element.height
         ) {
-            console.log(`${element.name} tiene hover true`)
             element.hover = true
         } else {
             element.hover = false
@@ -297,28 +304,26 @@ class CanvasHandler {
         );
         canvas.style.cursor = isHovering ? 'pointer' : 'default';
         //movement
-        Object.values(assets).forEach(element => {
-            if (element.name=="xAxis" && element.clicking==true) {
-                const finalVertexX = e.offsetX-element.clickedAt.x
-                if (finalVertexX > 500 || finalVertexX < 0) {
-                    let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
-                    vertex.x = 1
-                    return
-                }
-                let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
-                vertex.x = finalVertexX
+        if (assets.xAxis.clicking===true) {
+            const element = assets.xAxis
+            const finalVertexX = e.offsetX-element.clickedAt.x
+            let vertex = cachedVertices[`vertex${this.targetting}`];
+            if (finalVertexX > 500 || finalVertexX < 0) {
+                vertex.x = 1
+                return
             }
-            if (element.name=="yAxis" && element.clicking==true) {
-                const finalVertexY = e.offsetY+(64-element.clickedAt.y)
-                if (finalVertexY > 500 || finalVertexY < 0) {
-                    let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
-                    vertex.y = 499
-                    return
-                } 
-                let vertex = Object.values(assets).filter(asset => asset.name === `vertex${this.targetting}`)[0];
-                vertex.y = finalVertexY //! deuda tecnica a revisar jej                
-            }
-        });
+            vertex.x = finalVertexX
+        }
+        if (assets.yAxis.clicking===true) {
+            const element = assets.yAxis
+            const finalVertexY = e.offsetY+(64-element.clickedAt.y)
+            let vertex = cachedVertices[`vertex${this.targetting}`];
+            if (finalVertexY > 500 || finalVertexY < 0) {
+                vertex.y = 499
+                return
+            } 
+            vertex.y = finalVertexY //! deuda tecnica a revisar jej                
+        }
     }
 }
 let canvasHandler = new CanvasHandler(canvas, sliderVertices)
@@ -330,9 +335,9 @@ slider.oninput = function() {
     cellSize = divisorMasCercano(this.value);
 }
 function gameLoop(){
+    updateVertexCache()
     colorMap =  new Map()
     cont.clearRect(0,0,canvasLenght, canvasLenght)
-    
     matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
     drawEdges()
     assets.vertex0.width = cellSize
@@ -348,7 +353,7 @@ function gameLoop(){
     }
     drawVertices()
     if (greenArrow.complete || redArrow.complete) {
-        const vertex = Object.values(assets).filter(asset => asset.name === `vertex${canvasHandler.targetting}`)[0];
+        const vertex = cachedVertices[`vertex${canvasHandler.targetting}`];
         drawXYaxis(vertex.x, vertex.y)
     }
     requestAnimationFrame(gameLoop)
