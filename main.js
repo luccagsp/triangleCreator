@@ -3,6 +3,7 @@ const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
 
 const sliderVertices = document.getElementById('myRangeVertices')
+let colorMap =  new Map()
 
 const fillCheckbox = document.getElementById('fillCheckbox');
 const rainbowCheckbox = document.getElementById('rainbowCheckbox');
@@ -21,10 +22,6 @@ let assets = {
 
 //mapa binario de celdas a dibujar
 let matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
-
-let colorIndexes = [
-    {x:0,y:0,color:{r:0,g:0,b:0}}
-]
 let transparent = true
 
 const greenArrow = new Image();
@@ -45,17 +42,8 @@ function createGradientByPoint(color0, color1, point) { //'point' must be betwee
 
     return {r,g,b}
 }
-function findCellColor(x,y,colorIndexes) {
-    for (let index = 0; index < colorIndexes.length; index++) {
-        if (
-            colorIndexes[index].x ===x &&
-            colorIndexes[index].y ===y
-        ) {
-            const {r,g,b} = colorIndexes[index].color
-            return {r,g,b}
-        }
-        
-    }
+function findCellColor(x, y) {
+    return colorMap.get(`${x},${y}`) || null;
 }
 function extendVertex(x,y) {
     const cellSize = divisorMasCercano(Number(slider.value))
@@ -103,10 +91,11 @@ function divisorMasCercano(num) {
     );
 }
 function bresenhamAlgorithm(v0,v1, v0color, v1color) {
-    let x0 = Math.round(v0[0]/cellSize)
-    let y0 = Math.round(v0[1]/cellSize)
-    let x1 = Math.round(v1[0]/cellSize)
-    let y1 = Math.round(v1[1]/cellSize)
+    let x0 = Math.round(v0[0]/cellSize);
+    let y0 = Math.round(v0[1]/cellSize);
+    let x1 = Math.round(v1[0]/cellSize);
+    let y1 = Math.round(v1[1]/cellSize);
+    
 
     let dx = x1 - x0
     let dy = y1 - y0
@@ -120,11 +109,13 @@ function bresenhamAlgorithm(v0,v1, v0color, v1color) {
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
         let x = Math.round(x0 + i * stepX) 
         let y = Math.round(y0 + i * stepY)
+        console.log(matrixMap)
+        console.log(y,x)
         matrixMap[y][x] = true
         //color handler
         const {r,g,b} = createGradientByPoint(v0color, v1color, stepColor*i)
 
-        colorIndexes.push({x,y,color:{r,g,b}})
+        colorMap.set(`${x},${y}`, {r, g, b});
     }
 }
 function drawXYaxis(x,y) {
@@ -171,14 +162,13 @@ function fill(matrix, fillsTransparent) {
         if (rainbowCheckbox.checked ===false){
             cont.fillStyle = "white"
             cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-            cont.fillStyle = "white" 
             continue
         } 
 
         //Gradient fill
         step = 1/w
-        const leftColor = findCellColor(start - 1, y, colorIndexes);
-        const rightColor = findCellColor(end, y, colorIndexes);
+        const leftColor = findCellColor(start - 1, y);
+        const rightColor = findCellColor(end, y);
         if (!(leftColor && rightColor)) {continue}
         const { r: r0, g: g0, b: b0 } = leftColor;
         const { r: r1, g: g1, b: b1 } = rightColor;
@@ -217,7 +207,7 @@ function drawEdges() {
         for (let i = 0; i < matrixMap[j].length; i++) {
             if (matrixMap[j][i] == true){
                 if (rainbowCheckbox.checked) {
-                    const {r,g,b} = findCellColor(i,j,colorIndexes)
+                    const {r,g,b} = findCellColor(i,j)
                     cont.fillStyle = `rgb(${r},${g},${b})`
                 } else {
                     cont.fillStyle = `white`
@@ -337,12 +327,13 @@ canvasHandler.initEvents()
 
 slider.oninput = function() {
     sliderInfo.innerHTML = divisorMasCercano(this.value);
+    cellSize = divisorMasCercano(this.value);
 }
 function gameLoop(){
-    cellSize = divisorMasCercano(slider.value)
+    colorMap =  new Map()
     cont.clearRect(0,0,canvasLenght, canvasLenght)
+    
     matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
-    colorIndexes = []
     drawEdges()
     assets.vertex0.width = cellSize
     assets.vertex0.height = cellSize
@@ -362,5 +353,4 @@ function gameLoop(){
     }
     requestAnimationFrame(gameLoop)
 }
-requestAnimationFrame
 requestAnimationFrame(gameLoop);
