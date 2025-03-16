@@ -4,7 +4,9 @@ const sliderInfo = document.getElementById('sliderInfo')
 
 const sliderVertices = document.getElementById('myRangeVertices')
 
-const checkbox = document.getElementById('checkbox');
+const fillCheckbox = document.getElementById('fillCheckbox');
+const rainbowCheckbox = document.getElementById('rainbowCheckbox');
+
 const canvas = document.getElementById("canvas")
 const cont = canvas.getContext("2d");
 const canvasLenght = canvas.clientWidth
@@ -12,13 +14,17 @@ let cellSize = 10
 let assets = {
     xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
     yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
-    vertex0: {id:2, vertexId: 0, type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:50, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:"red"},
-    vertex1: {id:3, vertexId: 1, type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:"green"},
-    vertex2: {id:4, vertexId: 2, type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:"blue"},
+    vertex0: {id:2, vertexId: 0, type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:50, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:255,g:0,b:0}},
+    vertex1: {id:3, vertexId: 1, type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:255,b:0}},
+    vertex2: {id:4, vertexId: 2, type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:0,b:255}},
 }
 
 //mapa binario de celdas a dibujar
 let matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+
+let colorIndexes = [
+    {x:0,y:0,color:{r:0,g:0,b:0}}
+]
 let transparent = true
 
 const greenArrow = new Image();
@@ -29,11 +35,28 @@ cont.fillStyle = "white"
 
 sliderInfo.innerHTML = slider.value;
 
-slider.oninput = function() {
-    sliderInfo.innerHTML = divisorMasCercano(this.value);
+function createGradientByPoint(color0, color1, point) { //'point' must be betweeen 0 and 1
+    const r0 = color0.r, g0 = color0.g, b0 = color0.b;
+    const r1 = color1.r, g1 = color1.g, b1 = color1.b;
+
+    const r =  ~~((r1-r0) * (point) + r0)
+    const g =  ~~((g1-g0) * (point) + g0)
+    const b =  ~~((b1-b0) * (point) + b0)
+
+    return {r,g,b}
 }
-
-
+function findCellColor(x,y,colorIndexes) {
+    for (let index = 0; index < colorIndexes.length; index++) {
+        if (
+            colorIndexes[index].x ===x &&
+            colorIndexes[index].y ===y
+        ) {
+            const {r,g,b} = colorIndexes[index].color
+            return {r,g,b}
+        }
+        
+    }
+}
 function extendVertex(x,y) {
     const cellSize = divisorMasCercano(Number(slider.value))
     x=Math.round(x/cellSize);
@@ -79,7 +102,7 @@ function divisorMasCercano(num) {
         Math.abs(b - num) < Math.abs(a - num) ? b : a
     );
 }
-function bresenhamAlgorithm(v0,v1) {
+function bresenhamAlgorithm(v0,v1, v0color, v1color) {
     let x0 = Math.round(v0[0]/cellSize)
     let y0 = Math.round(v0[1]/cellSize)
     let x1 = Math.round(v1[0]/cellSize)
@@ -93,10 +116,15 @@ function bresenhamAlgorithm(v0,v1) {
     let stepX = dx / step
     let stepY = dy / step
 
+    stepColor = 1/(step+1)
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
         let x = Math.round(x0 + i * stepX) 
         let y = Math.round(y0 + i * stepY)
         matrixMap[y][x] = true
+        //color handler
+        const {r,g,b} = createGradientByPoint(v0color, v1color, stepColor*i)
+
+        colorIndexes.push({x,y,color:{r,g,b}})
     }
 }
 function drawXYaxis(x,y) {
@@ -129,21 +157,38 @@ function fill(matrix, fillsTransparent) {
     
     for (let j = 0; j < matrix.length; j++) {
         const {start, end, err} = lenghtCalculator(matrix[j])
-        if (err == false) {
-            x = start
-            y = j
-            w = end-start
-            if (fillsTransparent == true) {
-                cont.fillStyle = 'rgba(0, 0, 0, 1)';
-                cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-                cont.fillStyle = "white"
-                continue
-            } else {
-                cont.fillStyle = "white"
-                cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-                cont.fillStyle = "white"
-            }
+        if (err === true) {continue}
+
+        const x = start, y = j
+        const w = end-start
+
+        if (fillsTransparent === true) {
+            cont.fillStyle = 'rgba(0, 0, 0, 1)';
+            cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+            cont.fillStyle = "white"
+            continue
         }
+        if (rainbowCheckbox.checked ===false){
+            cont.fillStyle = "white"
+            cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+            cont.fillStyle = "white" 
+            continue
+        } 
+
+        //Gradient fill
+        step = 1/w
+        const leftColor = findCellColor(start - 1, y, colorIndexes);
+        const rightColor = findCellColor(end, y, colorIndexes);
+        if (!(leftColor && rightColor)) {continue}
+        const { r: r0, g: g0, b: b0 } = leftColor;
+        const { r: r1, g: g1, b: b1 } = rightColor;
+        for (let index = 0; index < w; index++) {
+            const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*index)
+            cont.fillStyle = `rgb(${r},${g},${b})`
+            cont.fillRect((x+index)*cellSize,y*cellSize,cellSize,cellSize)
+            cont.fillStyle = "white"
+        }
+
     }
 }
 function drawVertices() {
@@ -153,7 +198,8 @@ function drawVertices() {
     // Recorrer los elementos filtrados
     vertices.forEach(vertex => {
         const {x,y,w,h} = extendVertex(vertex.x, vertex.y)
-        cont.fillStyle = vertex.color
+        const {r,g,b} = vertex.color
+        cont.fillStyle = `rgb(${r},${g},${b})`
 
         cont.fillRect(x, y, w, h)
         cont.fillStyle = "white"
@@ -163,14 +209,19 @@ function drawEdges() {
     const vertex0 = Object.values(assets).filter(asset => asset.name === "vertex0")[0];
     const vertex1 = Object.values(assets).filter(asset => asset.name === "vertex1")[0];
     const vertex2 = Object.values(assets).filter(asset => asset.name === "vertex2")[0];
-    bresenhamAlgorithm([vertex0.x, vertex0.y],[vertex1.x, vertex1.y])
-    bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y])
-    bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y])
+    bresenhamAlgorithm([vertex0.x, vertex0.y],[vertex1.x, vertex1.y],vertex0.color,vertex1.color)
+    bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y],vertex1.color,vertex2.color)
+    bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y],vertex2.color,vertex0.color)
     //Dibujar
     for (let j = 0; j < matrixMap.length; j++) {
         for (let i = 0; i < matrixMap[j].length; i++) {
             if (matrixMap[j][i] == true){
-                cont.fillStyle = "white"
+                if (rainbowCheckbox.checked) {
+                    const {r,g,b} = findCellColor(i,j,colorIndexes)
+                    cont.fillStyle = `rgb(${r},${g},${b})`
+                } else {
+                    cont.fillStyle = `white`
+                }
                 cont.fillRect(i*cellSize,j*cellSize,cellSize,cellSize )
                 cont.fillStyle = "white"
             }
@@ -281,12 +332,17 @@ class CanvasHandler {
     }
 }
 let canvasHandler = new CanvasHandler(canvas, sliderVertices)
+
 canvasHandler.initEvents()
 
+slider.oninput = function() {
+    sliderInfo.innerHTML = divisorMasCercano(this.value);
+}
 function gameLoop(){
     cellSize = divisorMasCercano(slider.value)
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+    colorIndexes = []
     drawEdges()
     assets.vertex0.width = cellSize
     assets.vertex0.height = cellSize
@@ -294,7 +350,7 @@ function gameLoop(){
     assets.vertex1.height = cellSize
     assets.vertex2.width = cellSize
     assets.vertex2.height = cellSize
-    if (checkbox.checked) {
+    if (fillCheckbox.checked) {
         fill(matrixMap,fillsTransparent=false)
     } else {
         fill(matrixMap,fillsTransparent=true)
@@ -304,6 +360,7 @@ function gameLoop(){
         const vertex = Object.values(assets).filter(asset => asset.name === `vertex${canvasHandler.targetting}`)[0];
         drawXYaxis(vertex.x, vertex.y)
     }
+    requestAnimationFrame(gameLoop)
 }
-
-setInterval(gameLoop, 5);
+requestAnimationFrame
+requestAnimationFrame(gameLoop);
