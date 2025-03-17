@@ -1,4 +1,3 @@
-//todo: Reparar hitbox de verticess
 const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
 
@@ -11,7 +10,9 @@ const rainbowCheckbox = document.getElementById('rainbowCheckbox');
 const canvas = document.getElementById("canvas")
 const cont = canvas.getContext("2d");
 const canvasLenght = canvas.clientWidth
-let cellSize = 10
+let cellSize = divisorMasCercano(Number(slider.value))
+const minimumCellSize = 10
+let hitboxExpand = minimumCellSize/cellSize
 let assets = {
     xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
     yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
@@ -56,7 +57,6 @@ function findCellColor(x, y) {
     return colorMap.get(`${x},${y}`) || null;
 }
 function extendVertex(x,y) {
-    const cellSize = divisorMasCercano(Number(slider.value))
     x=Math.round(x/cellSize);
     y=Math.round(y/cellSize);
     if (cellSize > 10) {
@@ -64,12 +64,12 @@ function extendVertex(x,y) {
         y=y*cellSize
         return {x,y,w:cellSize,h:cellSize}
     }
-    const minimumCellSize = 10
-    
+    expand = minimumCellSize/cellSize
     w = minimumCellSize*2
     h = minimumCellSize*2
-    x = (x-(minimumCellSize/cellSize))*cellSize
-    y = (y-(minimumCellSize/cellSize))*cellSize
+    x = (x-expand)*cellSize
+    y = (y-expand)*cellSize
+
     return {x,y,w,h}
 }
 
@@ -164,17 +164,15 @@ function fill(matrix, fillsTransparent) {
         if (fillsTransparent === true) {
             cont.fillStyle = 'rgba(0, 0, 0, 1)';
             cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-            cont.fillStyle = "white"
             continue
         }
         if (rainbowCheckbox.checked ===false){
-            cont.fillStyle = "white"
             cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
             continue
         } 
 
         //Gradient fill
-        step = 1/w
+        const step = 1/w
         const leftColor = findCellColor(start - 1, y);
         const rightColor = findCellColor(end, y);
         if (!(leftColor && rightColor)) {continue}
@@ -184,7 +182,6 @@ function fill(matrix, fillsTransparent) {
             const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*index)
             cont.fillStyle = `rgb(${r},${g},${b})`
             cont.fillRect((x+index)*cellSize,y*cellSize,cellSize,cellSize)
-            cont.fillStyle = "white"
         }
 
     }
@@ -229,10 +226,10 @@ function drawEdges() {
 function mouse(x,y) {
     return Object.values(assets).find(element => {
         if (
-            x >= element.x &&
-            x <= element.x + element.width &&
-            y >= element.y &&
-            y <= element.y + element.height
+            x >= element.x - hitboxExpand &&
+            x <= element.x + hitboxExpand + element.width&&
+            y >= element.y - hitboxExpand &&
+            y <= element.y + hitboxExpand + element.height
         ) {
             element.clicking = true
             element.clickedAt = {x:x-element.x, y:y-element.y}
@@ -244,10 +241,10 @@ function hover(x,y) {
     return Object.values(assets).find(element => {
         if (
             element.hoverable===true &&
-            x >= element.x &&
-            x <= element.x + element.width &&
-            y >= element.y &&
-            y <= element.y + element.height
+            x >= element.x - hitboxExpand &&
+            x <= element.x + element.width + hitboxExpand &&
+            y >= element.y - hitboxExpand &&
+            y <= element.y + element.height + hitboxExpand
         ) {
             element.hover = true
         } else {
@@ -327,19 +324,20 @@ class CanvasHandler {
     }
 }
 let canvasHandler = new CanvasHandler(canvas, sliderVertices)
+cellSize = divisorMasCercano(slider.value);
 
 canvasHandler.initEvents()
-cellSize = divisorMasCercano(slider.value);
 slider.oninput = function() {
     sliderInfo.innerHTML = divisorMasCercano(this.value);
     cellSize = divisorMasCercano(slider.value);
 }
 function gameLoop(){
-    
-    updateVertexCache()
+    cellSize = divisorMasCercano(Number(slider.value))
+    matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+    hitboxExpand = minimumCellSize/cellSize
     colorMap =  new Map()
     cont.clearRect(0,0,canvasLenght, canvasLenght)
-    matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+    updateVertexCache()
     drawEdges()
     assets.vertex0.width = cellSize
     assets.vertex0.height = cellSize
