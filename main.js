@@ -8,6 +8,8 @@ const fillCheckbox = document.getElementById('fillCheckbox');
 const rainbowCheckbox = document.getElementById('rainbowCheckbox');
 
 const canvas = document.getElementById("canvas")
+
+
 const cont = canvas.getContext("2d");
 const canvasLenght = canvas.clientWidth
 let cellSize = divisorMasCercano(Number(slider.value))
@@ -25,6 +27,7 @@ let cachedVertices = {
     vertex1: null,
     vertex2: null
 };
+const keys = Object.keys(assets);
 function updateVertexCache() {
     cachedVertices.vertex0 = assets.vertex0;
     cachedVertices.vertex1 = assets.vertex1;
@@ -305,9 +308,12 @@ class CanvasHandler {
     onMouseMove(e) {
         // hover
         hover(e.offsetX, e.offsetY);
-        const isHovering = Object.values(assets).some(
-            (asset) => asset.hoverable && asset.hover
-        );
+        let isHovering = null
+        for (let index = 0; index < keys.length; index++) {
+            const element = assets[keys[index]];
+            if (element.hoverable && element.hover) {isHovering=true}
+        }
+
         canvas.style.cursor = isHovering ? 'pointer' : 'default';
         
         // movement
