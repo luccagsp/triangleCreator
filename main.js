@@ -14,6 +14,7 @@ const cont = canvas.getContext("2d");
 const canvasLenght = canvas.clientWidth
 let cellSize = divisorMasCercano(Number(slider.value))
 const minimumCellSize = 10
+let size = canvasLenght/cellSize
 let hitboxExpand = minimumCellSize/cellSize
 let assets = {
     xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
@@ -27,6 +28,10 @@ let cachedVertices = {
     vertex1: null,
     vertex2: null
 };
+const getIndex = (x, y) => y * size + x;
+const getRow = (y) => {
+    return binaryMap.slice(y * size, (y + 1) * size);
+}
 const keys = Object.keys(assets);
 function updateVertexCache() {
     cachedVertices.vertex0 = assets.vertex0;
@@ -35,7 +40,7 @@ function updateVertexCache() {
 }
 
 //mapa binario de celdas a dibujar
-let matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
+let binaryMap = new Uint8Array(size*size)
 let transparent = true
 
 const greenArrow = new Image();
@@ -57,7 +62,7 @@ function createGradientByPoint(color0, color1, point) { //'point' must be betwee
     return {r,g,b}
 }
 function findCellColor(x, y) {
-    return colorMap.get(`${x},${y}`) || null;
+    return colorMap.get(`${x},${y}`) || {r:255, g:255, b:255};
 }
 function extendVertex(x,y) {
     x=Math.round(x/cellSize);
@@ -79,12 +84,12 @@ function extendVertex(x,y) {
 function lenghtCalculator(array) {
     let line = {start:undefined, end:undefined, err:false}
     for (let i = 0; i < array.length; i++) {
-        if (array[i] == false) {continue}
-        if (array[i] == true && array[i+1] == false && line.start ==undefined) {
+        if (array[i] == 0) {continue}
+        if (array[i] == 1 && array[i+1] == 0 && line.start ==undefined) {
             line.start = i+1
             continue
         }
-        if (array[i] == true && array[i-1] == false && line.start !=undefined) {
+        if (array[i] == 1 && array[i-1] == 0 && line.start !=undefined) {
             line.end = i
         }
     }
@@ -122,7 +127,7 @@ function bresenhamAlgorithm(v0,v1, v0color, v1color) {
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
         let x = Math.round(x0 + i * stepX) 
         let y = Math.round(y0 + i * stepY)
-        matrixMap[y][x] = true
+        binaryMap[getIndex(x,y)] = true
         //color handler
         const {r,g,b} = createGradientByPoint(v0color, v1color, stepColor*i)
 
@@ -155,10 +160,9 @@ function drawXYaxis(x,y) {
     };
 
 }
-function fill(matrix, fillsTransparent) {
-    
-    for (let j = 0; j < matrix.length; j++) {
-        const {start, end, err} = lenghtCalculator(matrix[j])
+function fill(fillsTransparent) {
+    for (let j = 0; j < size; j++) {
+        const {start, end, err} = lenghtCalculator(getRow(j))
         if (err === true) {continue}
 
         const x = start, y = j
@@ -211,9 +215,9 @@ function drawEdges() {
     bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y],vertex1.color,vertex2.color)
     bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y],vertex2.color,vertex0.color)
     //Dibujar
-    for (let j = 0; j < matrixMap.length; j++) {
-        for (let i = 0; i < matrixMap[j].length; i++) {
-            if (matrixMap[j][i] == true){
+    for (let j = 0; j < size; j++) {
+        for (let i = 0; i < size; i++) {
+            if (binaryMap[getIndex(i,j)] == true){
                 if (rainbowCheckbox.checked) {
                     const {r,g,b} = findCellColor(i,j)
                     cont.fillStyle = `rgb(${r},${g},${b})`
@@ -245,7 +249,8 @@ function mouse(x, y) {
     });
 }
 function hover(x,y) {
-    return Object.values(assets).find(element => {
+    for (let index = 0; index < keys.length; index++) {
+        const element = assets[keys[index]];
         if (
             element.hoverable===true &&
             x >= element.x - hitboxExpand &&
@@ -254,10 +259,11 @@ function hover(x,y) {
             y <= element.y + element.height + hitboxExpand
         ) {
             element.hover = true
+            return 
         } else {
             element.hover = false
         }
-    });
+    }
 }
 class CanvasHandler {
     constructor(canvas, sliderVertices) {
@@ -398,10 +404,11 @@ slider.oninput = function() {
     cellSize = divisorMasCercano(slider.value);
 }
 function gameLoop(){
+    size = canvasLenght/cellSize
     cellSize = divisorMasCercano(Number(slider.value))
-    matrixMap = Array.from({ length: canvasLenght/cellSize }, () => Array(canvasLenght/cellSize).fill(false));
-    hitboxExpand = minimumCellSize/cellSize
     colorMap =  new Map()
+    binaryMap = new Uint8Array(size*size)
+    hitboxExpand = minimumCellSize/cellSize
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     updateVertexCache()
     drawEdges()
@@ -412,9 +419,9 @@ function gameLoop(){
     assets.vertex2.width = cellSize
     assets.vertex2.height = cellSize
     if (fillCheckbox.checked) {
-        fill(matrixMap,fillsTransparent=false)
+        fill(fillsTransparent=false)
     } else {
-        fill(matrixMap,fillsTransparent=true)
+        fill(fillsTransparent=true)
     }
     drawVertices()
     if (greenArrow.complete || redArrow.complete) {
