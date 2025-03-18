@@ -223,17 +223,21 @@ function drawEdges() {
         }
     }
 }
-function mouse(x,y) {
+function mouse(x, y) {
+    // Increase hitbox for touch devices
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const touchBonus = isTouchDevice ? 10 : 0; // Extra hitbox size for touch
+    
     return Object.values(assets).find(element => {
         if (
-            x >= element.x - hitboxExpand &&
-            x <= element.x + hitboxExpand + element.width&&
-            y >= element.y - hitboxExpand &&
-            y <= element.y + hitboxExpand + element.height
+            x >= element.x - (hitboxExpand + touchBonus) &&
+            x <= element.x + (hitboxExpand + touchBonus) + element.width &&
+            y >= element.y - (hitboxExpand + touchBonus) &&
+            y <= element.y + (hitboxExpand + touchBonus) + element.height
         ) {
-            element.clicking = true
-            element.clickedAt = {x:x-element.x, y:y-element.y}
-            return element
+            element.clicking = true;
+            element.clickedAt = {x: x - element.x, y: y - element.y};
+            return element;
         }
     });
 }
@@ -267,59 +271,115 @@ class CanvasHandler {
         this.targetting = Number(this.sliderVertices.value);
     }
 
-
     initEvents() {
+        // Mouse events
         this.canvas.addEventListener("mousedown", this.onMouseDown.bind(this));
         this.canvas.addEventListener("mouseup", this.onMouseUp.bind(this));
         this.canvas.addEventListener("mousemove", this.onMouseMove.bind(this));
+        
+        // Touch events for mobile
+        this.canvas.addEventListener("touchstart", this.onTouchStart.bind(this));
+        this.canvas.addEventListener("touchend", this.onTouchEnd.bind(this));
+        this.canvas.addEventListener("touchmove", this.onTouchMove.bind(this));
     }
 
     onMouseDown(e) {
-        const x = e.offsetX
-        const y = e.offsetY
-        const elementTouched = mouse(x,y)
+        const x = e.offsetX;
+        const y = e.offsetY;
+        const elementTouched = mouse(x, y);
         
-        if (!elementTouched) return
-        const vertexId = elementTouched.vertexId
+        if (!elementTouched) return;
+        const vertexId = elementTouched.vertexId;
         if (elementTouched.type === "vertex" && vertexId != this.targetting) {
-            this.targetting = vertexId
+            this.targetting = vertexId;
         }
     }
 
     onMouseUp(e) {
         canvas.style.cursor = 'default';
         Object.values(assets).forEach(element => {
-            element.clicking = false
+            element.clicking = false;
         });
     }
 
     onMouseMove(e) {
-        //hover
-        hover(e.offsetX, e.offsetY)
+        // hover
+        hover(e.offsetX, e.offsetY);
         const isHovering = Object.values(assets).some(
             (asset) => asset.hoverable && asset.hover
         );
         canvas.style.cursor = isHovering ? 'pointer' : 'default';
-        //movement
-        if (assets.xAxis.clicking===true) {
-            const element = assets.xAxis
-            const finalVertexX = e.offsetX-element.clickedAt.x
+        
+        // movement
+        this.handleMovement(e.offsetX, e.offsetY);
+    }
+
+    // Touch event handlers
+    onTouchStart(e) {
+        e.preventDefault(); // Prevent scrolling when touching the canvas
+        
+        if (e.touches.length > 0) {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            const elementTouched = mouse(x, y);
+            
+            if (!elementTouched) return;
+            const vertexId = elementTouched.vertexId;
+            if (elementTouched.type === "vertex" && vertexId != this.targetting) {
+                this.targetting = vertexId;
+            }
+        }
+    }
+
+    onTouchEnd(e) {
+        e.preventDefault();
+        Object.values(assets).forEach(element => {
+            element.clicking = false;
+        });
+    }
+
+    onTouchMove(e) {
+        e.preventDefault();
+        
+        if (e.touches.length > 0) {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            // Call hover function for visual feedback
+            hover(x, y);
+            
+            // Handle movement
+            this.handleMovement(x, y);
+        }
+    }
+
+    // Common function for handling movement for both mouse and touch
+    handleMovement(x, y) {
+        if (assets.xAxis.clicking === true) {
+            const element = assets.xAxis;
+            const finalVertexX = x - element.clickedAt.x;
             let vertex = cachedVertices[`vertex${this.targetting}`];
             if (finalVertexX > 500 || finalVertexX < 0) {
-                vertex.x = 1
-                return
+                vertex.x = finalVertexX > 500 ? 499 : 1;
+                return;
             }
-            vertex.x = finalVertexX
+            vertex.x = finalVertexX;
         }
-        if (assets.yAxis.clicking===true) {
-            const element = assets.yAxis
-            const finalVertexY = e.offsetY+(64-element.clickedAt.y)
+        
+        if (assets.yAxis.clicking === true) {
+            const element = assets.yAxis;
+            const finalVertexY = y + (64 - element.clickedAt.y);
             let vertex = cachedVertices[`vertex${this.targetting}`];
             if (finalVertexY > 500 || finalVertexY < 0) {
-                vertex.y = 499
-                return
+                vertex.y = finalVertexY > 500 ? 499 : 1;
+                return;
             } 
-            vertex.y = finalVertexY //! deuda tecnica a revisar jej                
+            vertex.y = finalVertexY;
         }
     }
 }
