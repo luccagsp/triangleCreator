@@ -160,8 +160,8 @@ function drawXYaxis(x,y) {
     };
 
 }
-function fill(fillsTransparent) {
-    for (let j = 0; j < size; j++) {
+function fillDefault(fillsTransparent) {
+    for (let j = 0; j < size; j++) { //se rellena horizontalmente
         const {start, end, err} = lenghtCalculator(getRow(j))
         if (err === true) {continue}
 
@@ -173,10 +173,20 @@ function fill(fillsTransparent) {
             cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
             continue
         }
-        if (rainbowCheckbox.checked ===false){
-            cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-            continue
-        } 
+        cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+    }
+}
+
+function fillRainbow() {    
+    const imageData = cont.getImageData(0, 0, size * cellSize, size * cellSize);
+    const data = imageData.data;
+
+    for (let j = 0; j < size; j++) { //fills horizontally: for each row
+        const {start, end, err} = lenghtCalculator(getRow(j))
+        if (err === true) {continue}
+
+        const x = start, y = j
+        const w = end-start
 
         //Gradient fill
         const step = 1/w
@@ -185,12 +195,11 @@ function fill(fillsTransparent) {
         if (!(leftColor && rightColor)) {continue}
         const { r: r0, g: g0, b: b0 } = leftColor;
         const { r: r1, g: g1, b: b1 } = rightColor;
-        for (let index = 0; index < w; index++) {
+        for (let index = 0; index < w; index++) { //for item of the row
             const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*index)
             cont.fillStyle = `rgb(${r},${g},${b})`
             cont.fillRect((x+index)*cellSize,y*cellSize,cellSize,cellSize)
         }
-
     }
 }
 function drawVertices() {
@@ -418,10 +427,14 @@ function gameLoop(){
     assets.vertex1.height = cellSize
     assets.vertex2.width = cellSize
     assets.vertex2.height = cellSize
-    if (fillCheckbox.checked) {
-        fill(fillsTransparent=false)
+
+    const shouldFillRainbow = rainbowCheckbox.checked && fillCheckbox.checked;
+    const shouldFillTransparent = !fillCheckbox.checked;
+
+    if (shouldFillRainbow) {
+        fillRainbow();
     } else {
-        fill(fillsTransparent=true)
+        fillDefault(fillsTransparent = shouldFillTransparent);
     }
     drawVertices()
     if (greenArrow.complete || redArrow.complete) {
