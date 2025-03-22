@@ -11,7 +11,7 @@ const canvas = document.getElementById("canvas")
 
 
 const cont = canvas.getContext("2d");
-const canvasLenght = canvas.clientWidth
+let canvasLenght = canvas.clientWidth
 let cellSize = divisorMasCercano(Number(slider.value))
 const minimumCellSize = 10
 let size = canvasLenght/cellSize
@@ -177,14 +177,12 @@ function fillDefault(fillsTransparent) {
     }
 }
 
-function fillRainbow() {    
-    const imageData = cont.getImageData(0, 0, size * cellSize, size * cellSize);
-    const data = imageData.data;
-
-    for (let j = 0; j < size; j++) { //fills horizontally: for each row
+function fillRainbow() {
+    const imageBuffer = cont.createImageData(canvasLenght, canvasLenght);
+    for (let j = 0; j < size; j++) {
         const {start, end, err} = lenghtCalculator(getRow(j))
         if (err === true) {continue}
-
+        //a partir de ahora todas las filas tienen pixeles a dibujar
         const x = start, y = j
         const w = end-start
 
@@ -195,13 +193,21 @@ function fillRainbow() {
         if (!(leftColor && rightColor)) {continue}
         const { r: r0, g: g0, b: b0 } = leftColor;
         const { r: r1, g: g1, b: b1 } = rightColor;
-        for (let index = 0; index < w; index++) { //for item of the row
-            const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*index)
-            cont.fillStyle = `rgb(${r},${g},${b})`
-            cont.fillRect((x+index)*cellSize,y*cellSize,cellSize,cellSize)
+        
+        for (let cx = 0; cx < w; cx++) {
+            const index = (j*canvasLenght+(x+cx))*4
+            
+            const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*cx)  //get cols    
+            imageBuffer.data[index] = r;
+            imageBuffer.data[index+1] = g;
+            imageBuffer.data[index+2] = b;
+            imageBuffer.data[index+3] = 255;
         }
     }
+    cont.putImageData(imageBuffer, 0,0);
+
 }
+
 function drawVertices() {
     const vertices = [cachedVertices.vertex0, cachedVertices.vertex1, cachedVertices.vertex2];
     for (let i = 0; i < vertices.length; i++) {
@@ -413,6 +419,7 @@ slider.oninput = function() {
     cellSize = divisorMasCercano(slider.value);
 }
 function gameLoop(){
+    canvasLenght = canvas.clientWidth
     size = canvasLenght/cellSize
     cellSize = divisorMasCercano(Number(slider.value))
     colorMap =  new Map()
