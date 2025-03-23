@@ -177,31 +177,41 @@ function fillDefault(fillsTransparent) {
     }
 }
 
-function fillRainbow() {
-    const imageBuffer = cont.createImageData(canvasLenght, canvasLenght);
-    for (let j = 0; j < size; j++) {
-        const {start, end, err} = lenghtCalculator(getRow(j))
-        if (err === true) {continue}
-        //a partir de ahora todas las filas tienen pixeles a dibujar
-        const x = start, y = j
-        const w = end-start
+function drawCellInBuffer(cx,cy,imgBuffData, [r,g,b] ) {
+    //recibe coordendas de casillas, no de el punto en si
+    const startX =cx*cellSize;
+    const startY =cy*cellSize;
 
-        //Gradient fill
-        const step = 1/w
-        const leftColor = findCellColor(start - 1, y);
-        const rightColor = findCellColor(end, y);
+    for (let x = startX; x < startX+cellSize; x++) {
+        for (let y = startY; y < startY+cellSize; y++) {
+            const index = (y*canvasLenght+x)*4
+            imgBuffData[index]     = r;
+            imgBuffData[index + 1] = g;
+            imgBuffData[index + 2] = b;
+            imgBuffData[index + 3] = 255;
+        }
+    }
+    return imgBuffData
+}
+
+function fillRainbow() {
+    const imageBuffer = cont.createImageData(500,500);
+    for (let cy = 0; cy < size; cy++) {
+        const {start, end, err} = lenghtCalculator(getRow(cy))
+        if (err === true) {continue}
+        
+        const cellsWidth = end-start
+
+        const step = 1/cellsWidth
+        const leftColor = findCellColor(start - 1, cy);
+        const rightColor = findCellColor(end, cy);
         if (!(leftColor && rightColor)) {continue}
         const { r: r0, g: g0, b: b0 } = leftColor;
         const { r: r1, g: g1, b: b1 } = rightColor;
         
-        for (let cx = 0; cx < w; cx++) {
-            const index = (j*canvasLenght+(x+cx))*4
-            
-            const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*cx)  //get cols    
-            imageBuffer.data[index] = r;
-            imageBuffer.data[index+1] = g;
-            imageBuffer.data[index+2] = b;
-            imageBuffer.data[index+3] = 255;
+        for (let cx = 0; cx < end-start; cx++) {
+            const {r,g,b} =createGradientByPoint({r:r0,g:g0,b:b0},{r:r1,g:g1,b:b1}, step*cx)
+            imageBuffer.data = drawCellInBuffer(start+cx ,cy,imageBuffer.data, [r,g,b])
         }
     }
     cont.putImageData(imageBuffer, 0,0);
@@ -391,8 +401,9 @@ class CanvasHandler {
             const element = assets.xAxis;
             const finalVertexX = x - element.clickedAt.x;
             let vertex = cachedVertices[`vertex${this.targetting}`];
-            if (finalVertexX > 500 || finalVertexX < 0) {
-                vertex.x = finalVertexX > 500 ? 499 : 1;
+            const maxX = canvasLenght-assets.xAxis.width
+            if (finalVertexX> maxX || finalVertexX < 0) {
+                vertex.x = finalVertexX > maxX ? maxX : 1;
                 return;
             }
             vertex.x = finalVertexX;
@@ -402,8 +413,11 @@ class CanvasHandler {
             const element = assets.yAxis;
             const finalVertexY = y + (64 - element.clickedAt.y);
             let vertex = cachedVertices[`vertex${this.targetting}`];
-            if (finalVertexY > 500 || finalVertexY < 0) {
-                vertex.y = finalVertexY > 500 ? 499 : 1;
+            
+            const minY = assets.yAxis.height
+
+            if (finalVertexY > 500 || finalVertexY < minY) {
+                vertex.y = finalVertexY > 500 ? 499 : minY;
                 return;
             } 
             vertex.y = finalVertexY;
@@ -419,7 +433,15 @@ slider.oninput = function() {
     cellSize = divisorMasCercano(slider.value);
 }
 function gameLoop(){
-    canvasLenght = canvas.clientWidth
+    if (window.innerWidth <= 768) {
+        canvas.width = 300
+        canvas.height = 300
+    } else {
+        canvas.width = 500
+        canvas.height = 500
+    }
+    canvasLenght = canvas.width
+
     size = canvasLenght/cellSize
     cellSize = divisorMasCercano(Number(slider.value))
     colorMap =  new Map()
@@ -440,6 +462,8 @@ function gameLoop(){
 
     if (shouldFillRainbow) {
         fillRainbow();
+        drawEdges()
+
     } else {
         fillDefault(fillsTransparent = shouldFillTransparent);
     }
