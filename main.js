@@ -195,7 +195,7 @@ function drawCellInBuffer(cx,cy,imgBuffData, [r,g,b] ) {
 }
 
 function fillRainbow() {
-    const imageBuffer = cont.createImageData(500,500);
+    const imageBuffer = cont.createImageData(canvasLenght,canvasLenght);
     for (let cy = 0; cy < size; cy++) {
         const {start, end, err} = lenghtCalculator(getRow(cy))
         if (err === true) {continue}
