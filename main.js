@@ -1,6 +1,6 @@
 const slider = document.getElementById('myRange')
 const sliderInfo = document.getElementById('sliderInfo')
-
+const elementsArray = document.querySelectorAll("#colorPicker");
 const sliderVertices = document.getElementById('myRangeVertices')
 let colorMap =  new Map()
 
@@ -16,6 +16,7 @@ let cellSize = divisorMasCercano(Number(slider.value))
 const minimumCellSize = 10
 let size = canvasLenght/cellSize
 let hitboxExpand = minimumCellSize/cellSize
+
 let assets = {
     xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
     yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
@@ -38,6 +39,19 @@ function updateVertexCache() {
     cachedVertices.vertex1 = assets.vertex1;
     cachedVertices.vertex2 = assets.vertex2;
 }
+
+elementsArray.forEach((colorPicker) => {
+    colorPicker.addEventListener("input", (e) => {
+        const color = e.target.value
+        const r = parseInt(color.substring(1, 3), 16);
+        const g = parseInt(color.substring(3, 5), 16);
+        const b = parseInt(color.substring(5, 7), 16);
+        assets[e.target.name].color.r = r
+        assets[e.target.name].color.g = g
+        assets[e.target.name].color.b = b
+        console.log()
+    })
+})
 
 //mapa binario de celdas a dibujar
 let binaryMap = new Uint8Array(size*size)
@@ -160,23 +174,6 @@ function drawXYaxis(x,y) {
     };
 
 }
-function fillDefault(fillsTransparent) {
-    for (let j = 0; j < size; j++) { //se rellena horizontalmente
-        const {start, end, err} = lenghtCalculator(getRow(j))
-        if (err === true) {continue}
-
-        const x = start, y = j
-        const w = end-start
-
-        if (fillsTransparent === true) {
-            cont.fillStyle = 'rgba(0, 0, 0, 1)';
-            cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-            continue
-        }
-        cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
-    }
-}
-
 function drawCellInBuffer(cx,cy,imgBuffData, [r,g,b] ) {
     //recibe coordendas de casillas, no de el punto en si
     const startX =cx*cellSize;
@@ -194,6 +191,22 @@ function drawCellInBuffer(cx,cy,imgBuffData, [r,g,b] ) {
     return imgBuffData
 }
 
+function fillDefault(fillsTransparent) {
+    for (let j = 0; j < size; j++) { //se rellena horizontalmente
+        const {start, end, err} = lenghtCalculator(getRow(j))
+        if (err === true) {continue}
+
+        const x = start, y = j
+        const w = end-start
+
+        if (fillsTransparent === true) {
+            cont.fillStyle = 'rgba(0, 0, 0, 1)';
+            cont.clearRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+            continue
+        }
+        cont.fillRect(x*cellSize,y*cellSize,w*cellSize,cellSize)
+    }
+}
 function fillRainbow() {
     const imageBuffer = cont.createImageData(canvasLenght,canvasLenght);
     for (let cy = 0; cy < size; cy++) {

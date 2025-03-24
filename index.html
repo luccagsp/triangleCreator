@@ -22,6 +22,11 @@
             <p id="sliderInfo"></p>
             <p id="description">Vértice:</p>
             <input type="range" min="0" max="2" value="0" class="slider" id="myRangeVertices" />
+            <div style="display: flex; flex-direction: row; justify-content: center; gap: 5px; margin: 10px;">
+                <input name="vertex0" id="colorPicker" type="color" value="#ff0000" />
+                <input name="vertex1" id="colorPicker" type="color" value="#00ff00" />
+                <input name="vertex2" id="colorPicker" type="color" value="#0000ff" />
+            </div>
             <!-- <p id="sliderInfoVertices"></p> -->
             <label class="container">Rellenar
             
@@ -48,7 +53,9 @@
         font-family: Arial, Helvetica, sans-serif;
 
     }
-
+    #colorPicker {
+        aspect-ratio: 1/1;
+    }
     body {
         width: 100vw;
         height: 100dvh;
