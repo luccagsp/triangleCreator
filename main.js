@@ -148,15 +148,21 @@ function extendVertex(x,y) {
 }
 
 function lenghtCalculator(array) {
+    //recieves row -> size arrays
+    let toFillCells = []
     let line = {start:undefined, end:undefined, err:false}
     for (let i = 0; i < array.length; i++) {
-        if (array[i] == 0) {continue}
+        if (array[i] == 0) {
+            if (line.start) {toFillCells.push(i)}
+            continue
+        }
         if (array[i] != 0 && array[i+1] == 0 && line.start ==undefined) {
             line.start = i+1
             continue
         }
         if (array[i] != 0 && array[i-1] == 0 && line.start !=undefined) {
             line.end = i
+            return line
         }
     }
     if (line.start == undefined || line.end == undefined){
@@ -316,10 +322,13 @@ function drawEdges() {
             }
         }
     }
+    console.log(vertices)
     for (let i = 0; i < vertices.length; i++) {
         if (vertices[i] == undefined) {continue}
         const firstVertex = vertices[i]
         const nextVertex = vertices[(i+1)%vertices.length]
+        console.log({firstVertex, nextVertex})
+
         bresenhamAlgorithm([firstVertex.x, firstVertex.y],[nextVertex.x, nextVertex.y],firstVertex.color,nextVertex.color,i+1)
     }
     //Dibujar
