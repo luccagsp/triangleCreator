@@ -3,6 +3,7 @@ const sliderInfo = document.getElementById('sliderInfo')
 const elementsArray = document.querySelectorAll("#colorPicker");
 const sliderVertices = document.getElementById('myRangeVertices')
 let colorMap =  new Map()
+let totalVertices = 0
 
 const fillCheckbox = document.getElementById('fillCheckbox');
 const rainbowCheckbox = document.getElementById('rainbowCheckbox');
@@ -17,27 +18,79 @@ const minimumCellSize = 10
 let size = canvasLenght/cellSize
 let hitboxExpand = minimumCellSize/cellSize
 
+const updateTotalVertices = () => {
+    totalVertices = -1
+    for (const elemento in assets) {
+        if (assets.hasOwnProperty(elemento)) {
+            const element = assets[elemento]
+            if (element.type=="vertex" && element.state == "generated") {
+                totalVertices++
+            }
+        }
+    }
+    sliderVertices.max = totalVertices
+}
+
 let assets = {
     xAxis: {id:0,type:"axisArrow", name:"xAxis",   width:64,   height:21,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
     yAxis: {id:1,type:"axisArrow", name:"yAxis",   width:21,   height:64,  x:undefined,y:undefined, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true},
-    vertex0: {id:2, vertexId: 0, type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:50, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:255,g:0,b:0}},
-    vertex1: {id:3, vertexId: 1, type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:255,b:0}},
-    vertex2: {id:4, vertexId: 2, type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:0,b:255}},
+    vertex0: {id:2, vertexId: 0, order: 0,state:"generated",type:"vertex", name:"vertex0", width:null, height:null,  x:10,y:50, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:255,g:0,b:0}},
+    vertex1: {id:3, vertexId: 1, order: 1,state:"generated",type:"vertex", name:"vertex1", width:null, height:null,  x:35,y:210, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:255,b:0}},
+    vertex2: {id:4, vertexId: 2, order: 2,state:"generated",type:"vertex", name:"vertex2", width:null, height:null,  x:300,y:200, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:0,g:0,b:255}},
+    vertex3: {id:5, vertexId: 3, order: "generating",state:"generating", type:"vertex", name:"vertex2", width:null, height:null,  x:200,y:40, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:25,g:255,b:255}},
 }
+updateTotalVertices()
+console.log(totalVertices)
 let cachedVertices = {
     vertex0: null,
     vertex1: null,
-    vertex2: null
+    vertex2: null,
+    vertex3: null
 };
 const getIndex = (x, y) => y * size + x;
 const getRow = (y) => {
     return binaryMap.slice(y * size, (y + 1) * size);
 }
+
+const mostCloserCell = (x,y) => {
+    //se reciben coordenadas absolutas
+    cont.fillRect(x,y,cellSize,cellSize)
+    //se transforman a coordenadas de binaryMap 
+    const cx = Math.round(x/cellSize)
+    const cy = Math.round(y/cellSize)
+    
+    let dMin = -1
+    let dMinxy = [0,0] 
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            const ij = j*size+i;
+            
+            if (binaryMap[ij] != 0) {
+                const dx = Math.abs(cx-i)
+                const dy = Math.abs(cy-j)
+                const d =  Math.sqrt(dx ** 2 + dy ** 2);
+                if (dMin==-1) {dMin=d}
+                else if (dMin>d) {
+                    dMin=d
+                    dMinxy=[i,j]
+                }
+            }
+            
+        }
+        
+    }
+    if (assets.vertex3.state == "generating") {
+        assets.vertex3.x = dMinxy[0]*cellSize
+        assets.vertex3.y = dMinxy[1]*cellSize
+    }
+}
+
 const keys = Object.keys(assets);
 function updateVertexCache() {
     cachedVertices.vertex0 = assets.vertex0;
     cachedVertices.vertex1 = assets.vertex1;
     cachedVertices.vertex2 = assets.vertex2;
+    cachedVertices.vertex3 = assets.vertex3;
 }
 
 elementsArray.forEach((colorPicker) => {
@@ -49,7 +102,6 @@ elementsArray.forEach((colorPicker) => {
         assets[e.target.name].color.r = r
         assets[e.target.name].color.g = g
         assets[e.target.name].color.b = b
-        console.log()
     })
 })
 
@@ -99,11 +151,11 @@ function lenghtCalculator(array) {
     let line = {start:undefined, end:undefined, err:false}
     for (let i = 0; i < array.length; i++) {
         if (array[i] == 0) {continue}
-        if (array[i] == 1 && array[i+1] == 0 && line.start ==undefined) {
+        if (array[i] != 0 && array[i+1] == 0 && line.start ==undefined) {
             line.start = i+1
             continue
         }
-        if (array[i] == 1 && array[i-1] == 0 && line.start !=undefined) {
+        if (array[i] != 0 && array[i-1] == 0 && line.start !=undefined) {
             line.end = i
         }
     }
@@ -122,7 +174,7 @@ function divisorMasCercano(num) {
         Math.abs(b - num) < Math.abs(a - num) ? b : a
     );
 }
-function bresenhamAlgorithm(v0,v1, v0color, v1color) {
+function bresenhamAlgorithm(v0,v1, v0color, v1color, id) {
     let x0 = Math.round(v0[0]/cellSize);
     let y0 = Math.round(v0[1]/cellSize);
     let x1 = Math.round(v1[0]/cellSize);
@@ -141,7 +193,7 @@ function bresenhamAlgorithm(v0,v1, v0color, v1color) {
     for (let i = 0; i < step + 1; i++) { //Por cada casilla horizontal de distancia...
         let x = Math.round(x0 + i * stepX) 
         let y = Math.round(y0 + i * stepY)
-        binaryMap[getIndex(x,y)] = true
+        binaryMap[getIndex(x,y)] = id
         //color handler
         const {r,g,b} = createGradientByPoint(v0color, v1color, stepColor*i)
 
@@ -232,7 +284,14 @@ function fillRainbow() {
 }
 
 function drawVertices() {
-    const vertices = [cachedVertices.vertex0, cachedVertices.vertex1, cachedVertices.vertex2];
+
+    const vertices = [];
+    for (const vertice in cachedVertices) {
+        if (cachedVertices.hasOwnProperty(vertice)) {
+            vertices.push(cachedVertices[vertice])
+        }
+    }
+
     for (let i = 0; i < vertices.length; i++) {
         const vertex = vertices[i]
         const {x,y,w,h} = extendVertex(vertex.x, vertex.y)
@@ -245,17 +304,28 @@ function drawVertices() {
     
 }
 function drawEdges() {
-    
-    const vertex0 = cachedVertices.vertex0;
-    const vertex1 = cachedVertices.vertex1;
-    const vertex2 = cachedVertices.vertex2;
-    bresenhamAlgorithm([vertex0.x, vertex0.y],[vertex1.x, vertex1.y],vertex0.color,vertex1.color)
-    bresenhamAlgorithm([vertex1.x, vertex1.y],[vertex2.x, vertex2.y],vertex1.color,vertex2.color)
-    bresenhamAlgorithm([vertex2.x, vertex2.y],[vertex0.x, vertex0.y],vertex2.color,vertex0.color)
+    const vertices = [];
+    for (const vertice in cachedVertices) {
+        if (cachedVertices.hasOwnProperty(vertice)) {
+            if (cachedVertices[vertice].state=="generated") {
+                if (!vertices[cachedVertices[vertice].order]) {
+                    vertices.push(cachedVertices[vertice])
+                } else {
+                    vertices.splice(cachedVertices[vertice].order+1, 0, cachedVertices[vertice])
+                }
+            }
+        }
+    }
+    for (let i = 0; i < vertices.length; i++) {
+        if (vertices[i] == undefined) {continue}
+        const firstVertex = vertices[i]
+        const nextVertex = vertices[(i+1)%vertices.length]
+        bresenhamAlgorithm([firstVertex.x, firstVertex.y],[nextVertex.x, nextVertex.y],firstVertex.color,nextVertex.color,i+1)
+    }
     //Dibujar
     for (let j = 0; j < size; j++) {
         for (let i = 0; i < size; i++) {
-            if (binaryMap[getIndex(i,j)] == true){
+            if (binaryMap[getIndex(i,j)] != 0){
                 if (rainbowCheckbox.checked) {
                     const {r,g,b} = findCellColor(i,j)
                     cont.fillStyle = `rgb(${r},${g},${b})`
@@ -309,12 +379,12 @@ class CanvasHandler {
         this.context = canvas.getContext("2d");
         this.sliderVertices = sliderVertices;
         this.targetting = Number(this.sliderVertices.value);
-
         // Sincroniza el valor cuando cambia el slider
         this.sliderVertices.addEventListener('input', this.updateTargetting.bind(this));
     }
 
     updateTargetting() {
+        console.log(this.totalVertices)
         this.targetting = Number(this.sliderVertices.value);
     }
 
@@ -335,6 +405,13 @@ class CanvasHandler {
         const y = e.offsetY;
         const elementTouched = mouse(x, y);
         
+        if (assets.vertex3.state == 'generating') {
+            const xvertex3 = Math.round((assets.vertex3.x)/cellSize)
+            const yvertex3 = Math.round((assets.vertex3.y)/cellSize)
+        
+            assets.vertex3.order = binaryMap[getIndex(xvertex3, yvertex3)]-1
+            assets.vertex3.state = "generated"
+        }
         if (!elementTouched) return;
         const vertexId = elementTouched.vertexId;
         if (elementTouched.type === "vertex" && vertexId != this.targetting) {
@@ -351,17 +428,21 @@ class CanvasHandler {
 
     onMouseMove(e) {
         // hover
-        hover(e.offsetX, e.offsetY);
+        const x = e.offsetX
+        const y = e.offsetY
+        
+        hover(x, y);
         let isHovering = null
         for (let index = 0; index < keys.length; index++) {
             const element = assets[keys[index]];
             if (element.hoverable && element.hover) {isHovering=true}
         }
-
+        
+        mostCloserCell(x,y)
         canvas.style.cursor = isHovering ? 'pointer' : 'default';
         
         // movement
-        this.handleMovement(e.offsetX, e.offsetY);
+        this.handleMovement(x, y);
     }
 
     // Touch event handlers
@@ -437,6 +518,7 @@ class CanvasHandler {
         }
     }
 }
+updateTotalVertices()
 let canvasHandler = new CanvasHandler(canvas, sliderVertices)
 cellSize = divisorMasCercano(slider.value);
 
@@ -446,6 +528,7 @@ slider.oninput = function() {
     cellSize = divisorMasCercano(slider.value);
 }
 function gameLoop(){
+    updateTotalVertices()
     if (window.innerWidth <= 768) {
         canvas.width = 300
         canvas.height = 300
@@ -458,7 +541,7 @@ function gameLoop(){
     size = canvasLenght/cellSize
     cellSize = divisorMasCercano(Number(slider.value))
     colorMap =  new Map()
-    binaryMap = new Uint8Array(size*size)
+    binaryMap = new Uint16Array(size*size)
     hitboxExpand = minimumCellSize/cellSize
     cont.clearRect(0,0,canvasLenght, canvasLenght)
     updateVertexCache()
