@@ -40,14 +40,18 @@ let assets = {
     vertex3: {id:5, vertexId: 3, order: "generating",state:"generating", type:"vertex", name:"vertex2", width:null, height:null,  x:200,y:40, clicking:false, clickedAt: {x:undefined, y:undefined}, hoverable:true, color:{r:25,g:255,b:255}},
 }
 updateTotalVertices()
-console.log(totalVertices)
 let cachedVertices = {
     vertex0: null,
     vertex1: null,
     vertex2: null,
     vertex3: null
 };
-const getIndex = (x, y) => y * size + x;
+const getIndex = (x, y) => {
+    if(x<0 || x>size){return false}
+    if(y<0 || y>size){return false}
+    const xy = y * size + x
+    return xy;
+}
 const getRow = (y) => {
     return binaryMap.slice(y * size, (y + 1) * size);
 }
@@ -249,6 +253,57 @@ function drawCellInBuffer(cx,cy,imgBuffData, [r,g,b] ) {
     return imgBuffData
 }
 
+class VisitedPoints {
+    constructor() {
+        this.data = new Map()
+    }
+    add(x,y) {
+        if (!this.data.has(x)) {
+            this.data.set(x, new Map())
+        }
+        this.data.get(x).set(y,true)
+    }
+    has(x,y) {
+        const point = this.data.get(x).get(y)
+        if (point) {
+            return point 
+        } else {return false}
+    }
+    print() {
+        console.log(this.data)
+    }
+}
+function neighbors(x,y) {
+    const indices = [[x-1,y], [x+1,y], [x,y-1], [x,y+1]]
+    
+    for (let i = 0; i < 4; i++) {
+        const index = indices[i];
+        const ix = index[0]
+        const iy = index[1]
+        const clcIndex = getIndex(ix,iy)
+        if (clcIndex != false) {
+            console.log(binaryMap[clcIndex])
+        } else {
+            console.log("nada")
+        }
+    }
+}
+neighbors(1,8)
+
+
+let visited = new VisitedPoints()
+function bfs(array, x,y) {
+    let queue = [v]
+    while (queue.length > 0) {
+        queue.pop(0)
+        if(!visited.has(x,y)){
+            visited.add(x,y)
+
+        }
+    }
+}
+//bfs(1,1)
+
 function fillDefault(fillsTransparent) {
     for (let j = 0; j < size; j++) { //se rellena horizontalmente
         const {start, end, err} = lenghtCalculator(getRow(j))
@@ -322,12 +377,10 @@ function drawEdges() {
             }
         }
     }
-    console.log(vertices)
     for (let i = 0; i < vertices.length; i++) {
         if (vertices[i] == undefined) {continue}
         const firstVertex = vertices[i]
         const nextVertex = vertices[(i+1)%vertices.length]
-        console.log({firstVertex, nextVertex})
 
         bresenhamAlgorithm([firstVertex.x, firstVertex.y],[nextVertex.x, nextVertex.y],firstVertex.color,nextVertex.color,i+1)
     }
@@ -393,7 +446,6 @@ class CanvasHandler {
     }
 
     updateTargetting() {
-        console.log(this.totalVertices)
         this.targetting = Number(this.sliderVertices.value);
     }
 
